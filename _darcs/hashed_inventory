@@ -1,0 +1,33 @@
+pristine:c59249811ea676918645f648c663a0ee1227c12812e45ae0bc4af1e3528b6c6a
+Starting with inventory:
+0000003163-75c76620a7c163316eabaca7c260dc7a3e43203e71f3d7dfc515cef3b9485265
+[TAG release 18-12-21
+Stephane Popinet <popinet@basilisk.fr>**20190102163246
+ Ignore-this: 68f51f796e1fc8e655abb0fd577faa5a
+] 
+hash: 0000002208-827b0fc37062ee5a43ccd52762ad158cbf6313c790c34a83c9b4aa9fb5976da9
+[Cosmetics
+Stephane Popinet <popinet@basilisk.fr>**20190103174159
+ Ignore-this: 4beedaa94913af1c2d8e27e30ab1037f
+] 
+hash: 0000000691-58b678692049e698a7c584da21477466fcda88c44701e012413a9e22a594de25
+[Further fixes for "mirror" function in 2D
+Stephane Popinet <popinet@basilisk.fr>**20190103174529
+ Ignore-this: 2057bad7dc13b752cd8c0b4961ddba49
+] 
+hash: 0000000522-82d6dd1c4593ca5349f3729f8c8647ef31557d0eb1540cf4c7c02fb56892d4ff
+[Memory tracing now works also with OpenMP
+Stephane Popinet <popinet@basilisk.fr>**20190103174608
+ Ignore-this: 769791396ce2be4affc11d2c6278983c
+] 
+hash: 0000001453-ee2e121f987165f2d16ad013d3d321dd87107e1716cd9de1db8c3c3a871ac034
+[Added embedded boundary conditions for pf, as suggested by Antoon van Hooft
+Stephane Popinet <popinet@basilisk.fr>**20190103175026
+ Ignore-this: cf3ada7a63b96f14342a461b74e761d
+] 
+hash: 0000017577-001c9c6fa2415740e53a7179406066132d40bbc6e9d77e09924d8d690118e7ef
+[Removed useless boundary condition for VOF
+Stephane Popinet <popinet@basilisk.fr>**20190103181951
+ Ignore-this: ac96fcd66f8b002b32937f63ba01cb4b
+] 
+hash: 0000000194-2ce2ff3116bb1ee3fe2f60c4186e669d6934021aea05a299bf93867162041b24
