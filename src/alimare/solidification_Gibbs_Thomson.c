@@ -118,7 +118,8 @@ be ten times larger than the initial thickness of ice: */
 int main()
 {
   size (L);
-  origin (0., -L0/2.);
+  // origin (0., -L0/2.);
+  origin (0., 0.);
   N  = 1 << LEVEL;
   init_grid (N);
   DT = DT_MAX;
@@ -131,13 +132,24 @@ The initial position of the interface is defined with this function: */
 
 // #define plane(x, y, H) (sqrt((x-L0/3.)*(x-L0/3.)/45.+(y)*(y)/15.) - H)
 // #define plane(x, y, H) (sqrt((x-L0/2.)*(x-L0/2.)/350.+(y-L0/2.)*(y-L0/2.)/5.) - H )
-double hexagon (double x, double y, double h)
+// double hexagon (double x, double y, double h)
+// {
+//   double theta = atan2(x,-y);
+//   double threshold1 = Pi/3.;
+//   double threshold2 = 2.*Pi/3.;
+//   return (theta < threshold1 ? -x+sqrt(3.*h)*(y+1.)  :
+//         (theta < threshold2 ? -x+sqrt(3.*h)/2. : -x+sqrt(3.*h)*(1.-y)));
+//   // return (-x+sqrt(3.)/2. );
+//   // return ( x+sqrt(3.)*(y-1.) );
+          
+// }
+
+double plane (double x, double y, double h)
 {
-  double theta = atan2(x,-y);
-  double threshold1 = Pi/3.;
-  double threshold2 = 2.*Pi/3.;
-  return (theta < threshold1 ? -x+sqrt(3.*h)*(y+1.)  :
-        (theta < threshold2 ? -x+sqrt(3.*h)/2. : -x+sqrt(3.*h)*(1.-y)));
+  // double theta = atan2(x,-y);
+  // double threshold1 = Pi/3.;
+  // double threshold2 = 2.*Pi/3.;
+  return (y+sin(2.*x)-h);
   // return (-x+sqrt(3.)/2. );
   // return ( x+sqrt(3.)*(y-1.) );
           
@@ -150,12 +162,14 @@ refined the grid around the future interface). */
 event init (i = 0) {
   scalar curve[];
   #if TREE
-    // refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
-    //         && plane(x, y, (H0 + dH_refine)) < 0.);
-  refine (level < MAX_LEVEL && hexagon(x, y, H0 - dH_refine ) < 0.
-            && hexagon(x, y, H0 + dH_refine) > 0.);
+    refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
+            && plane(x, y, (H0 + dH_refine)) < 0.);
+  // refine (level < MAX_LEVEL && plane(x, y, H0 - dH_refine ) < 0.
+  //           && plane(x, y, H0 + dH_refine) > 0.);
+    int iii = MAX_LEVEL;
+    printf( " %i \n", iii);
   #endif
-  fraction (f, -hexagon(x, y, H0));
+  fraction (f, plane(x, y, H0));
 
   boundary({f});
   curvature (f,curve);
