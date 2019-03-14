@@ -13,7 +13,7 @@ field](solidification_mwe_corner/video_solidification.mp4)
 
 We define the geometrical, temporal and resolution parameters: */
 
-#define H0 L0/10.
+#define H0 L0/5.
 #define L 10. // size of the box
 
 #define MIN_LEVEL 5
@@ -89,7 +89,7 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define dirichlet_time_factor 10.
 #define SIGMA                 0.0007
 #define Ray_min               10.*L0
-#define Precoeff              100.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+#define Precoeff              200.*(T_eq-TS_inf)/(SIGMA*Ray_min)
 
 /**
 We allocate several scalar fields to describe both the
