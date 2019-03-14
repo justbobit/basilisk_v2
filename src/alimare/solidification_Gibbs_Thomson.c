@@ -101,15 +101,15 @@ scalar * interfaces = {f}, * tracers = {temperature_L, temperature_S};
 /**
 We just specifie the dirichlet condition at the top, bottom, right and left: */
 
-temperature_L[top]    = neumann(TL_inf );
-temperature_L[left]   = neumann(TL_inf );
-temperature_L[bottom] = neumann(TL_inf );
-temperature_L[right]  = neumann(TL_inf );
+temperature_L[top]    = dirichlet(TL_inf );
+temperature_L[left]   = dirichlet(TL_inf );
+// temperature_L[bottom] = neumann(TL_inf );
+// temperature_L[right]  = neumann(TL_inf );
 
-temperature_S[bottom] = neumann(TS_inf );
-temperature_S[top]    = neumann(TS_inf );
-temperature_S[left]   = neumann(TS_inf );
-temperature_S[right]  = neumann(TS_inf );
+temperature_S[bottom] = dirichlet(TS_inf );
+temperature_S[top]    = dirichlet(TS_inf );
+// temperature_S[left]   = neumann(TS_inf );
+// temperature_S[right]  = neumann(TS_inf );
 
 /**
 The main function of the program, where we set the domain geometry to
