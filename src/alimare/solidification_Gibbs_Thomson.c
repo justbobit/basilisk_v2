@@ -89,7 +89,7 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define dirichlet_time_factor 10.
 #define SIGMA                 0.0007
 #define Ray_min               10.*L0
-#define Precoeff              200.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+#define Precoeff              20.*(T_eq-TS_inf)/(SIGMA*Ray_min)
 
 /**
 We allocate several scalar fields to describe both the
