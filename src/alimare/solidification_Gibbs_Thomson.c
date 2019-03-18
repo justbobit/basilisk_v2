@@ -24,7 +24,7 @@ We define the geometrical, temporal and resolution parameters: */
 #define F_ERR 1e-10
 
 #define T_END   6.
-#define DT_MAX  0.1
+#define DT_MAX  0.001
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
 
