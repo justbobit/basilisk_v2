@@ -88,6 +88,7 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define peclet_S              0.124
 #define dirichlet_time_factor 10.
 #define SIGMA                 0.0007
+#define VISC                  1.e-3
 #define Ray_min               10.*L0
 #define Precoeff              20.*(T_eq-TS_inf)/(SIGMA*Ray_min)
 
@@ -97,6 +98,7 @@ interface and temperature fields. */
 
 scalar f[], temperature_L[], temperature_S[], tr_eq[];
 scalar * interfaces = {f}, * tracers = {temperature_L, temperature_S};
+face vector v_pc[];
 
 /**
 We just specifie the dirichlet condition at the top, bottom, right and left: */
@@ -233,11 +235,16 @@ event stability (i++) {
     temperature_S.D       = D_S;
     temperature_S.inverse = true;
     temperature_S.peclet  = peclet_S;
+    foreach_face()
+      v_pc.x[] = 0.;
+
     for (scalar t in tracers) {    
       face vector tv[];
       phase_change_velocity (f, t, tv);
-      foreach_face()
-        uf.x[] += (t.inverse ? tv.x[] : - tv.x[]);
+      foreach_face(){
+        v_pc.x[] += (t.inverse ? tv.x[] : - tv.x[]);
+        uf.x[]   += (t.inverse ? tv.x[] : - tv.x[]);
+      }
     }
     boundary((scalar*){uf});
   }
@@ -279,10 +286,16 @@ event tracer_diffusion(i++) {
   boundary({curve});
 
   foreach(){
-     tr_eq[] = (f[] != 0. && f[] != 1. ? 
-              -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
-    // tr_eq[]  = T_eq;
-  } 
+     // tr_eq[] = (f[] != 0. && f[] != 1. ? 
+     //          -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
+    tr_eq[]  = T_eq;
+    double nn = 0;
+    foreach_dimension()
+      nn +=    (v_pc.x[]*v_pc.x[] + v_pc.x[1]*v_pc.x[1]);
+
+    tr_eq[] -= sqrt(nn)/VISC;
+  }
+
   boundary({tr_eq}); 
 
   if (i == 0) {
