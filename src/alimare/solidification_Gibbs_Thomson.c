@@ -155,7 +155,7 @@ double plane (double x, double y, double h)
   // double theta = atan2(x,-y);
   // double threshold1 = Pi/3.;
   // double threshold2 = 2.*Pi/3.;
-  return (y+sin(6.*Pi*x/L0)-h);
+  return (y-fabs(sin(3.*Pi*x/L0))-h);
   // return (-x+sqrt(3.)/2. );
   // return ( x+sqrt(3.)*(y-1.) );
           
