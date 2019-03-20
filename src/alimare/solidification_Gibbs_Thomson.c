@@ -242,8 +242,8 @@ event stability (i++) {
       face vector tv[];
       phase_change_velocity (f, t, tv);
       foreach_face(){
-        v_pc.x[] += (t.inverse ? tv.x[] : - tv.x[]);
-        uf.x[]   += (t.inverse ? tv.x[] : - tv.x[]);
+        v_pc.x[]  += tv.x[]*tv.x[] ;
+        uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
       }
     }
     boundary((scalar*){uf});
@@ -286,17 +286,17 @@ event tracer_diffusion(i++) {
   boundary({curve});
 
   foreach(){
-     // tr_eq[] = (f[] != 0. && f[] != 1. ? 
-     //          -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
-    tr_eq[]  = T_eq;
+     tr_eq[] = (f[] != 0. && f[] != 1. ? 
+              -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
+    // tr_eq[]  = T_eq;
     double nn = 0.;
     foreach_dimension()
-      nn +=    (v_pc.x[]*v_pc.x[] + v_pc.x[1]*v_pc.x[1]);
+      nn +=    (v_pc.x[] + v_pc.x[1])/4.;
 
 #if dimension == 2
-    tr_eq[] -= sqrt(nn)/4.*VISC;
+    tr_eq[] -= sqrt(nn)/(4.*VISC);
 #else 
-    tr_eq[] -= sqrt(nn)/6.*VISC;
+    tr_eq[] -= sqrt(nn)/(6.*VISC);
 #endif
   }
 
