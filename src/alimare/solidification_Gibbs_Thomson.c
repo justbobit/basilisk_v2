@@ -18,14 +18,14 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define MIN_LEVEL 5
 #define LEVEL     6
-#define MAX_LEVEL 7
+#define MAX_LEVEL 8
 #define dH_refine (2.*L0/(1 << LEVEL))
 
 #define F_ERR 1e-10
 
-#define T_END   6.
-#define DT_MAX  0.001
-#define DELTA_T 0.1 // for videos and measurements
+#define T_END   20.
+#define DT_MAX  0.5
+#define DELTA_T 0.5 // for videos and measurements
 #define Pi 3.141592653589793
 
 /**
@@ -88,9 +88,9 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define peclet_S              0.124
 #define dirichlet_time_factor 10.
 #define SIGMA                 0.0007
-#define VISC                  1.e-3
+#define VISC                  0.1
 #define Ray_min               10.*L0
-#define Precoeff              20.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+#define Precoeff              10.*(T_eq-TS_inf)/(SIGMA*Ray_min)
 
 /**
 We allocate several scalar fields to describe both the
