@@ -246,6 +246,15 @@ event stability (i++) {
         uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
       }
     }
+
+    double dtmax2 = DT_MAX;
+    timestep (uf, dtmax2);
+    DT = dtmax2;
+    printf ( "%f \n", dtmax2);
+
+    // double Vmax = statsf (v_pc.x+v_pc.y+v_pc.z)).max // maximum velocity
+    // DT = L0/((1 << LEVEL)* Vmax) ;
+
     boundary((scalar*){uf});
   }
 }
