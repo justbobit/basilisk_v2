@@ -18,14 +18,14 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define MIN_LEVEL 5
 #define LEVEL     6
-#define MAX_LEVEL 7
+#define MAX_LEVEL 8
 #define dH_refine (2.*L0/(1 << LEVEL))
 
 #define F_ERR 1e-10
 
-#define T_END   6.
-#define DT_MAX  0.001
-#define DELTA_T 0.1 // for videos and measurements
+#define T_END   20.
+#define DT_MAX  0.5
+#define DELTA_T 0.5 // for videos and measurements
 #define Pi 3.141592653589793
 
 /**
@@ -88,9 +88,9 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define peclet_S              0.124
 #define dirichlet_time_factor 10.
 #define SIGMA                 0.0007
-#define VISC                  1.e-3
+#define VISC                  0.1
 #define Ray_min               10.*L0
-#define Precoeff              20.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+#define Precoeff              10.*(T_eq-TS_inf)/(SIGMA*Ray_min)
 
 /**
 We allocate several scalar fields to describe both the
@@ -155,7 +155,7 @@ double plane (double x, double y, double h)
   // double theta = atan2(x,-y);
   // double threshold1 = Pi/3.;
   // double threshold2 = 2.*Pi/3.;
-  return (y+sin(6.*Pi*x/L0)-h);
+  return (y-fabs(sin(3.*Pi*x/L0))-h);
   // return (-x+sqrt(3.)/2. );
   // return ( x+sqrt(3.)*(y-1.) );
           
@@ -242,10 +242,19 @@ event stability (i++) {
       face vector tv[];
       phase_change_velocity (f, t, tv);
       foreach_face(){
-        v_pc.x[] += (t.inverse ? tv.x[] : - tv.x[]);
-        uf.x[]   += (t.inverse ? tv.x[] : - tv.x[]);
+        v_pc.x[]  += tv.x[]*tv.x[] ;
+        uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
       }
     }
+
+    double dtmax2 = DT_MAX;
+    timestep (uf, dtmax2);
+    DT = dtmax2;
+    printf ( "%f \n", dtmax2);
+
+    // double Vmax = statsf (v_pc.x+v_pc.y+v_pc.z)).max // maximum velocity
+    // DT = L0/((1 << LEVEL)* Vmax) ;
+
     boundary((scalar*){uf});
   }
 }
@@ -286,17 +295,17 @@ event tracer_diffusion(i++) {
   boundary({curve});
 
   foreach(){
-     // tr_eq[] = (f[] != 0. && f[] != 1. ? 
-     //          -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
-    tr_eq[]  = T_eq;
+     tr_eq[] = (f[] != 0. && f[] != 1. ? 
+              -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
+    // tr_eq[]  = T_eq;
     double nn = 0.;
     foreach_dimension()
-      nn +=    (v_pc.x[]*v_pc.x[] + v_pc.x[1]*v_pc.x[1]);
+      nn +=    (v_pc.x[] + v_pc.x[1])/4.;
 
 #if dimension == 2
-    tr_eq[] -= sqrt(nn)/4.*VISC;
+    tr_eq[] -= sqrt(nn)/(4.*VISC);
 #else 
-    tr_eq[] -= sqrt(nn)/6.*VISC;
+    tr_eq[] -= sqrt(nn)/(6.*VISC);
 #endif
   }
 
