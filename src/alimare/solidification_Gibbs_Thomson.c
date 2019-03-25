@@ -19,10 +19,11 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define F_ERR 1e-10
 
-#define T_END   30.
+#define T_END   5.
 #define DT_MAX  0.1
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
+#define NB_width L0/5.// NarrowBand_width for level_set
 
 /**
 Solvers used :
@@ -35,6 +36,11 @@ Surface tension is also modeled.
 #include "alimare/elementary_body.h"
 #include "tension.h"
 
+/**
+Level set function is used
+*/
+
+#define LevelSet 0
 
 #define BG 0.7 // light gray for background
 #define DG 0. // dark gray
@@ -105,7 +111,7 @@ interface and temperature fields. */
 scalar f[], temperature_L[], temperature_S[], tr_eq[];
 scalar * interfaces = {f}, * tracers = {temperature_L, temperature_S};
 face vector v_pc[];
-
+scalar LS[];
 /**
 We just specifie the dirichlet condition at the top, bottom, right and left: */
 
@@ -162,7 +168,8 @@ double plane (double x, double y, double h)
   // double threshold1 = Pi/3.;
   // double threshold2 = 2.*Pi/3.;
 
-  return (y-fabs(sin(3.*Pi*x/L0))-h);
+  // return (y-fabs(sin(3.*Pi*x/L0))-h);
+  return (sqrt(y*y+x*x)-h);
   // return (y-h);
   
   // return (-x+sqrt(3.)/2. );
@@ -176,6 +183,7 @@ refined the grid around the future interface). */
 
 event init (i = 0) {
   scalar curve[];
+  vertex scalar LS_vert[];
   #if TREE
     refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
             && plane(x, y, (H0 + dH_refine)) < 0.);
@@ -189,7 +197,16 @@ event init (i = 0) {
   boundary({f});
   curvature (f,curve);
   boundary({curve});
+
+  foreach_vertex(){
+    LS_vert[] = plane(x,y,H0);
+  }
+  
+
   foreach() {
+    LS[] = (LS_vert[] + LS_vert[-1] + LS_vert[0,-1] + LS_vert[-1,-1] +
+       LS_vert[0,0,-1] + LS_vert[-1,0,-1] + LS_vert[0,-1,-1] 
+       + LS_vert[-1,-1,-1])/8.;
     temperature_L[] = f[]*TL_inf;
     temperature_S[] = (1. - f[])*TS_inf;
     // tr_eq[] = T_eq;
@@ -203,6 +220,7 @@ event init (i = 0) {
 
   output_ppm (f, n=600, file = "init.png"\
   , min = 0., max = 1.); 
+  output_ppm (LS, n=600, file = "level_set_init.png"); 
   output_ppm (tr_eq, n=600, file = "treq_init.png", min = -0.1, max = 0.); 
   stats s = statsf (tr_eq);
   printf ( " %f %f %f \n", s.min, s.max, s.stddev);

@@ -33,6 +33,10 @@ for viscosity. */
 # include "viscosity.h"
 #endif
 
+#if LevelSet
+# include "alimare/level_set.h"
+#endif
+
 /**
 The primary variables are the centered pressure field $p$ and the
 centered velocity field $\mathbf{u}$. The centered vector field
@@ -221,6 +225,9 @@ velocity/pressure fields by half a timestep. */
 event vof (i++,last);
 event tracer_advection (i++,last);
 event tracer_diffusion (i++,last);
+#if LevelSet
+event LS_advection(i++,last);
+#endif
 
 /**
 The fluid properties such as specific volume (fields $\alpha$ and
