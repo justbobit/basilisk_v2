@@ -2,11 +2,7 @@
 /**
 # Solidification with a plane interface
 
-We investigate the solidification of a block of water, between four plates, two
-at -20°C and two at +20°C. It serves at minimum working example to show
-how the functions defined in
-[elementary_body.h](/sandbox/qmagdelaine/phase_change/elementary_body.h)
-can be used to handle temperature fields and solidification.
+We investigate the solidification of a block of undercooledwater, between four plates, two at -20°C and two at +20°C. It serves at minimum working example to show how the functions defined in [elementary_body.h](/sandbox/alimare/elementary_body.h) which is dervied from : [elementary_body.h](/sandbox/qmagdelaine/phase_change/elementary_body.h). I simply added the possbility for tr_{eq} to be a field in the dirichlet_diffusion definition.
 
 ![Solification of a block of water with the temperature
 field](solidification_mwe_corner/video_solidification.mp4)
@@ -23,20 +19,23 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define F_ERR 1e-10
 
-#define T_END   20.
-#define DT_MAX  0.5
-#define DELTA_T 0.5 // for videos and measurements
+#define T_END   30.
+#define DT_MAX  0.1
+#define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
 
 /**
-We use an advection solver and the functions defined in
-[elementary_body.h](/sandbox/qmagdelaine/phase_change/elementary_body.h): */
-// #include "grid/cartesian.h"
-//#include "grid/multigrid.h"
+Solvers used :
+
+Navier-Stokes
+Surface tension is also modeled.
+*/
+
 #include "navier-stokes/centered.h"
 #include "alimare/elementary_body.h"
 #include "tension.h"
-// #include "view.h"
+
+
 #define BG 0.7 // light gray for background
 #define DG 0. // dark gray
 
@@ -58,8 +57,8 @@ the ice, at the top and bottom:
 $$
 \left\{
 \begin{array}{ll}
-\theta = 1 & \text{at the top}\\
-\theta = -1 & \text{at the bottom}\\
+\theta = -2 & \text{at the top}\\
+\theta = -2 & \text{at the bottom}\\
 \theta = 0 & \text{at the interface}
 \end{array}
 \right.
@@ -87,10 +86,17 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define peclet_L              0.253
 #define peclet_S              0.124
 #define dirichlet_time_factor 10.
-#define SIGMA                 0.0007
-#define VISC                  0.1
+#define SIGMA                 0.00007
+#define VISC                  0.2
 #define Ray_min               10.*L0
-#define Precoeff              10.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+#define Precoeff              5.*(T_eq-TS_inf)/(SIGMA*Ray_min)
+
+#define rho_S 917.
+#define rho_L 1000.
+#define latent_heat 334
+#define lambda_L 2.22e3
+#define lambda_S 555.e3
+
 
 /**
 We allocate several scalar fields to describe both the
@@ -155,7 +161,10 @@ double plane (double x, double y, double h)
   // double theta = atan2(x,-y);
   // double threshold1 = Pi/3.;
   // double threshold2 = 2.*Pi/3.;
+
   return (y-fabs(sin(3.*Pi*x/L0))-h);
+  // return (y-h);
+  
   // return (-x+sqrt(3.)/2. );
   // return ( x+sqrt(3.)*(y-1.) );
           
@@ -228,29 +237,34 @@ event stability (i++) {
     gaz phase. Here, the solification is an equilibrium between the heat
     transfers of each side of the interface. */
   
-    DT                    = DT_MAX;
-    temperature_L.D       = D_L;
-    temperature_L.inverse = false;
-    temperature_L.peclet  = peclet_L;
-    temperature_S.D       = D_S;
-    temperature_S.inverse = true;
-    temperature_S.peclet  = peclet_S;
+    DT                          = DT_MAX;
+    temperature_L.D             = D_L;
+    temperature_L.inverse       = false;
+    temperature_L.peclet        = peclet_L;
+    temperature_S.D             = D_S;
+    temperature_S.inverse       = true;
+    temperature_S.peclet        = peclet_S;
+    temperature_S.therm_conduct = lambda_S;
+    temperature_L.therm_conduct = lambda_L;
+    temperature_S.rho           = rho_S;
+    temperature_L.rho           = rho_L;
+    double L_H = latent_heat;
+
     foreach_face()
       v_pc.x[] = 0.;
 
     for (scalar t in tracers) {    
       face vector tv[];
-      phase_change_velocity (f, t, tv);
+      phase_change_velocity (f, t, tv, L_H);
       foreach_face(){
         v_pc.x[]  += tv.x[]*tv.x[] ;
         uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
       }
     }
-
     double dtmax2 = DT_MAX;
     timestep (uf, dtmax2);
-    DT = dtmax2;
-    printf ( "%f \n", dtmax2);
+    // DT = dtmax2;
+    // printf ( "%f \n", dtmax2);
 
     // double Vmax = statsf (v_pc.x+v_pc.y+v_pc.z)).max // maximum velocity
     // DT = L0/((1 << LEVEL)* Vmax) ;
@@ -370,7 +384,7 @@ event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
   output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", \
-   opt = "--delay 1", min = -0.4, max = 0);
+   opt = "--delay 1", min = -0.9, max = 0);
 
   // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", opt = "--delay 1",
   //   min = -0.2, max = 0);
