@@ -62,10 +62,7 @@ scalar new_scalar (const char * name)
 
 scalar new_vertex_scalar (const char * name)
 {
-  scalar s = new_scalar (name);
-  foreach_dimension()
-    s.d.x = -1;
-  return s;
+  return init_vertex_scalar (new_scalar (name), name);
 }
 
 static vector alloc_vector (const char * name)
@@ -172,8 +169,8 @@ vector new_const_vector (const char * name, int i, double * val)
 void scalar_clone (scalar a, scalar b)
 {
   char * name = a.name;
-  double (** boundary) (Point, Point, scalar) = a.boundary;
-  double (** boundary_homogeneous) (Point, Point, scalar) =
+  double (** boundary) (Point, Point, scalar, void *) = a.boundary;
+  double (** boundary_homogeneous) (Point, Point, scalar, void *) =
     a.boundary_homogeneous;
   _attribute[a.i] = _attribute[b.i];
   a.name = name;
@@ -310,17 +307,17 @@ void cartesian_boundary_flux (vector * list)
   // nothing to do
 }
 
-static double symmetry (Point point, Point neighbor, scalar s)
+static double symmetry (Point point, Point neighbor, scalar s, void * data)
 {
   return s[];
 }
 
-static double antisymmetry (Point point, Point neighbor, scalar s)
+static double antisymmetry (Point point, Point neighbor, scalar s, void * data)
 {
   return -s[];
 }
 
-double (* default_scalar_bc[]) (Point, Point, scalar) = {
+double (* default_scalar_bc[]) (Point, Point, scalar, void *) = {
   symmetry, symmetry, symmetry, symmetry, symmetry, symmetry
 };
 
@@ -340,9 +337,9 @@ scalar cartesian_init_scalar (scalar s, const char * name)
   _attribute[s.i] = (const _Attributes){0};
   s.name = pname;
   /* set default boundary conditions */
-  s.boundary = (double (**)(Point, Point, scalar))
+  s.boundary = (double (**)(Point, Point, scalar, void *))
     malloc (nboundary*sizeof (void (*)()));
-  s.boundary_homogeneous = (double (**)(Point, Point, scalar))
+  s.boundary_homogeneous = (double (**)(Point, Point, scalar, void *))
     malloc (nboundary*sizeof (void (*)()));
   for (int b = 0; b < nboundary; b++)
     s.boundary[b] = s.boundary_homogeneous[b] =
@@ -356,7 +353,16 @@ scalar cartesian_init_scalar (scalar s, const char * name)
   return s;
 }
 
-double (* default_vector_bc[]) (Point, Point, scalar) = {
+scalar cartesian_init_vertex_scalar (scalar s, const char * name)
+{
+  foreach_dimension()
+    s.d.x = -1;
+  for (int d = 0; d < nboundary; d++)
+    s.boundary[d] = s.boundary_homogeneous[d] = NULL;
+  return s;
+}
+  
+double (* default_vector_bc[]) (Point, Point, scalar, void *) = {
   antisymmetry, antisymmetry,
   antisymmetry, antisymmetry,
   antisymmetry, antisymmetry
@@ -426,36 +432,58 @@ tensor cartesian_init_tensor (tensor t, const char * name)
   return t;
 }
 
-void output_cells (FILE * fp)
+struct OutputCells {
+  FILE * fp;
+  coord c;
+  double size;
+};
+
+void output_cells (struct OutputCells p)
 {
+  if (!p.fp) p.fp = stdout;
   foreach() {
-    Delta /= 2.;
-    #if dimension == 1
-      fprintf (fp, "%g 0\n%g 0\n\n", x - Delta, x + Delta);
-    #elif dimension == 2
-      fprintf (fp, "%g %g\n%g %g\n%g %g\n%g %g\n%g %g\n\n",
+    bool inside = true;
+    coord o = {x,y,z};
+    foreach_dimension()
+      if (inside && p.size > 0. &&
+	  (o.x > p.c.x + p.size || o.x < p.c.x - p.size))
+	inside = false;
+    if (inside) {
+      Delta /= 2.;
+#if dimension == 1
+      fprintf (p.fp, "%g 0\n%g 0\n\n", x - Delta, x + Delta);
+#elif dimension == 2
+      fprintf (p.fp, "%g %g\n%g %g\n%g %g\n%g %g\n%g %g\n\n",
 	       x - Delta, y - Delta,
 	       x - Delta, y + Delta,
 	       x + Delta, y + Delta,
 	       x + Delta, y - Delta,
 	       x - Delta, y - Delta);
-    #else // dimension == 3
+#else // dimension == 3
       for (int i = -1; i <= 1; i += 2) {
-	fprintf (fp, "%g %g %g\n%g %g %g\n%g %g %g\n%g %g %g\n%g %g %g\n\n",
+	fprintf (p.fp, "%g %g %g\n%g %g %g\n%g %g %g\n%g %g %g\n%g %g %g\n\n",
 		 x - Delta, y - Delta, z + i*Delta,
 		 x - Delta, y + Delta, z + i*Delta,
 		 x + Delta, y + Delta, z + i*Delta,
 		 x + Delta, y - Delta, z + i*Delta,
 		 x - Delta, y - Delta, z + i*Delta);
 	for (int j = -1; j <= 1; j += 2)
-	  fprintf (fp, "%g %g %g\n%g %g %g\n\n",
+	  fprintf (p.fp, "%g %g %g\n%g %g %g\n\n",
 		   x + i*Delta, y + j*Delta, z - Delta,
 		   x + i*Delta, y + j*Delta, z + Delta);
       }
-    #endif
+#endif
+    }
   }
-  fflush (fp);
+  fflush (p.fp);
 }
+
+#if _MPI
+static void output_cells_internal (FILE * fp)
+{
+  output_cells (fp);
+}
+#endif
 
 static char * replace_ (const char * vname)
 {
@@ -496,7 +524,7 @@ void cartesian_debug (Point point)
   if (pid() > 0)
     sprintf (name, "cells-%d", pid());
   FILE * fp = fopen (name, "w");
-  output_cells (fp);
+  output_cells (fp, (coord){x,y,z}, 4.*Delta);
   fclose (fp);
 
   char stencil[80] = "stencil";
@@ -579,13 +607,14 @@ void cartesian_debug (Point point)
 
 void cartesian_methods()
 {
-  init_scalar      = cartesian_init_scalar;
-  init_vector      = cartesian_init_vector;
-  init_tensor      = cartesian_init_tensor;
-  init_face_vector = cartesian_init_face_vector;
-  boundary_level   = cartesian_boundary_level;
-  boundary_flux    = cartesian_boundary_flux;
-  debug            = cartesian_debug;
+  init_scalar        = cartesian_init_scalar;
+  init_vertex_scalar = cartesian_init_vertex_scalar;
+  init_vector        = cartesian_init_vector;
+  init_tensor        = cartesian_init_tensor;
+  init_face_vector   = cartesian_init_face_vector;
+  boundary_level     = cartesian_boundary_level;
+  boundary_flux      = cartesian_boundary_flux;
+  debug              = cartesian_debug;
 }
 
 struct _interpolate {
@@ -667,9 +696,9 @@ bid new_bid()
 {
   int b = nboundary++;
   for (scalar s in all) {
-    s.boundary = (double (**)(Point, Point, scalar))
+    s.boundary = (double (**)(Point, Point, scalar, void *))
       realloc (s.boundary, nboundary*sizeof (void (*)()));
-    s.boundary_homogeneous = (double (**)(Point, Point, scalar))
+    s.boundary_homogeneous = (double (**)(Point, Point, scalar, void *))
       realloc (s.boundary_homogeneous, nboundary*sizeof (void (*)()));
   }
   for (scalar s in all) {
@@ -688,7 +717,7 @@ bid new_bid()
 
 // Periodic boundary conditions
 
-static double periodic_bc (Point point, Point neighbor, scalar s)
+static double periodic_bc (Point point, Point neighbor, scalar s, void * data)
 {
   return nodata; // should not be used
 }

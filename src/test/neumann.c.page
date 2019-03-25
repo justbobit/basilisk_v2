@@ -25,8 +25,7 @@ static double exact (double x, double y) {
 double exact_gradient (Point point, double theta, double r)
 {
   coord n = facet_normal (point, cs, fs);
-  double nn = sqrt (sq(n.x) + sq(n.y));
-  n.x /= nn, n.y /= nn;
+  normalize (&n);
   double dsdtheta = - 3.*cube(r)*sin (3.*theta);
   double dsdr = 4.*cube(r)*cos (3.*theta);
   return (n.x*(dsdr*cos(theta) - dsdtheta*sin(theta)) +
@@ -36,7 +35,9 @@ double exact_gradient (Point point, double theta, double r)
 /**
 We also need a function for homogeneous Dirichlet condition. */
 
-static double dirichlet_homogeneous_bc (Point point, Point neighbor, scalar s) {
+static
+double dirichlet_homogeneous_bc (Point point, Point neighbor,
+				 scalar s, void * data) {
   return 0.;
 }
 
@@ -67,6 +68,7 @@ int main()
       phi[] = r - (0.25 + 0.05*cos(6.*theta));
 #endif
     }
+    boundary ({phi});
     fractions (phi, cs, fs);  
 #if TREE
     cs.refine = cs.prolongation = fraction_refine;
@@ -94,13 +96,17 @@ int main()
     /**
     The boundary conditions on the embedded boundary are Dirichlet and
     Neumann for Problem 1 and 3, respectively. */
-    
+
 #if DIRICHLET
-    a[embed] = dirichlet_embed (exact (x,y));
+    a[embed] = dirichlet (exact (x,y));
 #else
-    a[embed] =
-      neumann_embed (exact_gradient (point, atan2(y, x), sqrt(x*x + y*y)));
+    a[embed] = neumann (exact_gradient (point, atan2(y, x), sqrt(x*x + y*y)));
 #endif
+
+    /**
+    We use "third-order" [face flux interpolation](/src/embed.h). */
+
+    a.third = true;
 
     /**
     The right-hand-side
