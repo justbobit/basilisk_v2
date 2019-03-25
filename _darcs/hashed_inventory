@@ -1,4 +1,4 @@
-pristine:c678f93c9406ef8ba77c6e3063fbe287ad2539f50d328ce0815b12da0375ac4d
+pristine:0912c7f64a519748e31b4817860cdd69e6cc35026921a143c73d71584e62e823
 Starting with inventory:
 0000003163-75c76620a7c163316eabaca7c260dc7a3e43203e71f3d7dfc515cef3b9485265
 [TAG release 18-12-21
@@ -121,3 +121,8 @@ Stephane Popinet <popinet@basilisk.fr>**20190323161754
  Ignore-this: 6e136dfac5a82fd0cba7077c1a31e92a
 ] 
 hash: 0000003521-66cab7114055e6e24b285c2ecf0143f7886c8c56eec32d01c4c673fd9aba6ef6
+[sinus development and tests
+limarealexandre@gmail.com**20190325094753
+ Ignore-this: 4e5d58ddebcaa5dbbb86a3b3900e4f97
+] 
+hash: 0000007483-572a780ac87b907c47602f034a9056f47c7a58367b0215f632dd996d13cba92e
