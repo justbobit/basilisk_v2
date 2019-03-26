@@ -14,7 +14,7 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define MIN_LEVEL 5
 #define LEVEL     6
-#define MAX_LEVEL 8
+#define MAX_LEVEL 7
 #define dH_refine (2.*L0/(1 << LEVEL))
 
 #define F_ERR 1e-10
@@ -40,7 +40,7 @@ Surface tension is also modeled.
 Level set function is used
 */
 
-#define LevelSet 0
+#define LevelSet 1
 
 #define BG 0.7 // light gray for background
 #define DG 0. // dark gray
@@ -201,17 +201,19 @@ event init (i = 0) {
   foreach_vertex(){
     LS_vert[] = plane(x,y,H0);
   }
+  boundary({LS_vert});
   
 
   foreach() {
-    LS[] = (LS_vert[] + LS_vert[-1] + LS_vert[0,-1] + LS_vert[-1,-1] +
-       LS_vert[0,0,-1] + LS_vert[-1,0,-1] + LS_vert[0,-1,-1] 
-       + LS_vert[-1,-1,-1])/8.;
+    // LS[] = clamp((LS_vert[] + LS_vert[-1] + LS_vert[0,-1] + LS_vert[-1,-1] +
+    //    LS_vert[0,0,-1] + LS_vert[-1,0,-1] + LS_vert[0,-1,-1] 
+    //    + LS_vert[-1,-1,-1])/8.,-NB_width,NB_width);
+    LS[] = clamp((LS_vert[] ),-NB_width,NB_width);
     temperature_L[] = f[]*TL_inf;
     temperature_S[] = (1. - f[])*TS_inf;
     // tr_eq[] = T_eq;
-     tr_eq[] = (f[] != 0. && f[] != 1. ? 
-              -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
+    tr_eq[] = (f[] != 0. && f[] != 1. ? 
+            -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
   }
   foreach_face()
     uf.x[] = 0.;
@@ -327,7 +329,7 @@ event tracer_diffusion(i++) {
   boundary({curve});
 
   foreach(){
-     tr_eq[] = (f[] != 0. && f[] != 1. ? 
+    tr_eq[] = (f[] != 0. && f[] != 1. ? 
               -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
     // tr_eq[]  = T_eq;
     double nn = 0.;
@@ -397,7 +399,8 @@ event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
 
   output_ppm (f, n = 512, linear = true, file = "f.gif", opt = "--delay 1",\
               min = 0, max = 1);
-
+  output_ppm (LS, n = 512, linear = true, file = "LS.gif", opt = "--delay 1",\
+              min = -NB_width, max = NB_width);
 
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
