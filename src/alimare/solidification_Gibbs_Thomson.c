@@ -260,7 +260,7 @@ event stability (i++) {
     temperature_L.therm_conduct = lambda_L;
     temperature_S.rho           = rho_S;
     temperature_L.rho           = rho_L;
-    double L_H = latent_heat;
+    double L_H                  = latent_heat;
 
     foreach_face()
       v_pc.x[] = 0.;
@@ -275,11 +275,6 @@ event stability (i++) {
     }
     double dtmax2 = DT_MAX;
     timestep (uf, dtmax2);
-    // DT = dtmax2;
-    // printf ( "%f \n", dtmax2);
-
-    // double Vmax = statsf (v_pc.x+v_pc.y+v_pc.z)).max // maximum velocity
-    // DT = L0/((1 << LEVEL)* Vmax) ;
 
     boundary((scalar*){uf});
   }
@@ -312,8 +307,6 @@ event tracer_diffusion(i++) {
   temperature_L.inverse = false;
   temperature_S.D       = D_S;
   temperature_S.inverse = true;
-  // for (scalar t in tracers)  
-    // t.tr_eq = T_eq;
   boundary({f});
 
   curvature (f,curve);
@@ -323,16 +316,15 @@ event tracer_diffusion(i++) {
   foreach(){
     tr_eq[] = (f[] != 0. && f[] != 1. ? 
               -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
-    // tr_eq[]  = T_eq;
     double nn = 0.;
     foreach_dimension()
       nn +=    (v_pc.x[] + v_pc.x[1])/4.;
 
-#if dimension == 2
-    tr_eq[] -= sqrt(nn)/(4.*VISC);
-#else 
-    tr_eq[] -= sqrt(nn)/(6.*VISC);
-#endif
+    #if dimension == 2
+      tr_eq[] -= sqrt(nn)/(4.*VISC);
+    #else 
+      tr_eq[] -= sqrt(nn)/(6.*VISC);
+    #endif
   }
 
   boundary({tr_eq}); 
@@ -371,16 +363,6 @@ event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
   printf ( "%d %f %f %f %f \n", i, t, s.min, s.max, s.stddev);
   /**
   We mask out dead cells (i.e. cells for which `age` is zero). */
-
-  // scalar m[];
-  // scalar t_fonte[];
-
-  // foreach()
-    // m[] = age[] ? 1 : -1;
-
-  // output_ppm (age, mask = m, n = 512, file = "age.gif", opt = "--delay 1",
-  //   min = 0, max = 60);
-
 
   scalar temperature[];
   foreach() {
