@@ -31,6 +31,7 @@ Solvers used :
 Navier-Stokes
 Surface tension is also modeled.
 */
+#define LevelSet 1
 
 #include "navier-stokes/centered.h"
 #include "alimare/elementary_body.h"
@@ -40,7 +41,7 @@ Surface tension is also modeled.
 Level set function is used
 */
 
-#define LevelSet 1
+
 
 #define BG 0.7 // light gray for background
 #define DG 0. // dark gray
