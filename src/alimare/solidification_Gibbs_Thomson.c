@@ -116,19 +116,15 @@ scalar LS[];
 /**
 We just specifie the dirichlet condition at the top, bottom, right and left: */
 
-temperature_L[top]      = dirichlet(TL_inf );
-temperature_L[bottom]   = dirichlet(TL_inf );
-// temperature_L[left]     = periodic();
-// temperature_L[right]    = periodic();
-// temperature_L[bottom]= neumann(TL_inf );
-// temperature_L[right] = neumann(TL_inf );
+temperature_L[top]    = dirichlet(TL_inf );
+temperature_L[bottom] = dirichlet(TL_inf );
+temperature_L[right]  = dirichlet(TL_inf );
+temperature_L[left]   = dirichlet(TL_inf );
 
-temperature_S[bottom]   = dirichlet(TS_inf );
-temperature_S[top]      = dirichlet(TS_inf );
-// temperature_S[left]     = periodic();
-// temperature_S[right]    = periodic();
-// temperature_S[left]  = neumann(TS_inf );
-// temperature_S[right] = neumann(TS_inf );
+temperature_S[bottom] = dirichlet(TS_inf );
+temperature_S[top]    = dirichlet(TS_inf );
+temperature_S[left]   = dirichlet(TS_inf );
+temperature_S[right]  = dirichlet(TS_inf );
 
 /**
 The main function of the program, where we set the domain geometry to
