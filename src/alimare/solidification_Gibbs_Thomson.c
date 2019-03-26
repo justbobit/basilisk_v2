@@ -167,10 +167,6 @@ double plane (double x, double y, double h)
 
   // return (y-fabs(sin(3.*Pi*x/L0))-h);
   return (sqrt(y*y+x*x)-h);
-  // return (y-h);
-  
-  // return (-x+sqrt(3.)/2. );
-  // return ( x+sqrt(3.)*(y-1.) );
           
 }
 
