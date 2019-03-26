@@ -180,10 +180,6 @@ event init (i = 0) {
   #if TREE
     refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
             && plane(x, y, (H0 + dH_refine)) < 0.);
-  // refine (level < MAX_LEVEL && plane(x, y, H0 - dH_refine ) < 0.
-  //           && plane(x, y, H0 + dH_refine) > 0.);
-    int iii = MAX_LEVEL;
-    printf( " %i \n", iii);
   #endif
   fraction (f, plane(x, y, H0));
 
