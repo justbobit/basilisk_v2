@@ -109,10 +109,10 @@ We need time factor to set the Dirichlet condition, its role is specified in
 We allocate several scalar fields to describe both the
 interface and temperature fields. */
 
-scalar f[], temperature_L[], temperature_S[], tr_eq[];
+scalar f[], temperature_L[], temperature_S[], tr_eq[], dist[];
 scalar * interfaces = {f}, * tracers = {temperature_L, temperature_S};
+scalar * level_set = {dist};
 face vector v_pc[];
-scalar LS[];
 /**
 We just specifie the dirichlet condition at the top, bottom, right and left: */
 
@@ -176,42 +176,45 @@ refined the grid around the future interface). */
 
 event init (i = 0) {
   scalar curve[];
+  #if LevelSet
   vertex scalar LS_vert[];
+  #endif
   #if TREE
     refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
             && plane(x, y, (H0 + dH_refine)) < 0.);
   #endif
+
   fraction (f, plane(x, y, H0));
 
   boundary({f});
   curvature (f,curve);
   boundary({curve});
-
+  #if LevelSet
   foreach_vertex(){
     LS_vert[] = plane(x,y,H0);
   }
   boundary({LS_vert});
-  
+  #endif
 
   foreach() {
-    // LS[] = clamp((LS_vert[] + LS_vert[-1] + LS_vert[0,-1] + LS_vert[-1,-1] +
-    //    LS_vert[0,0,-1] + LS_vert[-1,0,-1] + LS_vert[0,-1,-1] 
-    //    + LS_vert[-1,-1,-1])/8.,-NB_width,NB_width);
-    LS[] = clamp((LS_vert[] ),-NB_width,NB_width);
+
+    #if LevelSet
+    dist[] = clamp(LS_vert[] ,-NB_width,NB_width);
+    #endif
+
     temperature_L[] = f[]*TL_inf;
     temperature_S[] = (1. - f[])*TS_inf;
     // tr_eq[] = T_eq;
     tr_eq[] = (f[] != 0. && f[] != 1. ? 
             -Precoeff*SIGMA*clamp(fabs(curve[]), 0., 1./Ray_min): 0.); 
   }
-  foreach_face()
-    uf.x[] = 0.;
-  boundary({temperature_L, temperature_S, uf, tr_eq});
+    
+  boundary({temperature_L, temperature_S, tr_eq});
   CFL = 0.2;
 
   output_ppm (f, n=600, file = "init.png"\
   , min = 0., max = 1.); 
-  output_ppm (LS, n=600, file = "level_set_init.png"); 
+  output_ppm (dist, n=600, file = "level_set_init.png"); 
   output_ppm (tr_eq, n=600, file = "treq_init.png", min = -0.1, max = 0.); 
   stats s = statsf (tr_eq);
   printf ( " %f %f %f \n", s.min, s.max, s.stddev);
@@ -388,9 +391,10 @@ event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
 
   output_ppm (f, n = 512, linear = true, file = "f.gif", opt = "--delay 1",\
               min = 0, max = 1);
-  output_ppm (LS, n = 512, linear = true, file = "LS.gif", opt = "--delay 1",\
-              min = -NB_width, max = NB_width);
-
+  #if LevelSet
+  output_ppm (dist, n = 512, linear = true, file = "LS.gif", 
+    opt = "--delay 1");
+  #endif
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
   output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", \
