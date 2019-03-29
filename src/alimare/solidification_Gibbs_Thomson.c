@@ -37,6 +37,9 @@ Surface tension is also modeled.
 #include "alimare/elementary_body.h"
 #include "tension.h"
 
+#if LevelSet
+# include "alimare/level_set.h"
+#endif
 /**
 Level set function is used
 */

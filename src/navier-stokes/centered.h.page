@@ -33,9 +33,6 @@ for viscosity. */
 # include "viscosity.h"
 #endif
 
-#if LevelSet
-# include "alimare/level_set.h"
-#endif
 
 /**
 The primary variables are the centered pressure field $p$ and the
