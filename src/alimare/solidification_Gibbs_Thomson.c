@@ -361,6 +361,16 @@ event adapt (i++) {
 }
 #endif
 
+
+// Reinitialization of the LS fucntion
+
+event LS_reinitialization(i+=10,last){
+  // LS_reinit(dist,dt, NB_width);
+  foreach()
+    dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
+  boundary({dist});
+}
+
 /**
 ## Video
 
