@@ -248,6 +248,33 @@ mgstats dirichlet_diffusion (struct Dirichlet_Diffusion p) {
 }
 
 /**
+The level set function is known to have diffusion issues therefore it needs to be reinitialized frequently. This operation can be quite expensive.
+
+*/
+
+void LS_reinit(scalar dist, double dt, double NB){
+  vector gr_LS[];
+  int i ;
+  double delt,res=-HUGE;
+
+  for (i = 1; i<=10;i++){
+    foreach(reduction(max:res)){
+      if(fabs(dist[])<NB/5.){
+        foreach_dimension(){
+          delt        = 0.;
+          gr_LS.x[]   = (dist[-1,0] + dist[1,0]-2.*dist[])/(2*Delta);
+          delt       += gr_LS.x[]*gr_LS.x[];
+        }
+        delt    = sqrt(delt);
+        dist[] += signbit(dist[])*(1-delt)*dt;
+        if(delt>=res) res = delt;
+      }
+    }
+    printf("%d %f %f \n",i,res, dt);
+  }
+}
+
+/**
 ## Further improvements
 
 Reading the work of Leon Malan, we can list at least three possible improvements
