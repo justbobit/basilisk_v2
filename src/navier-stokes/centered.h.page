@@ -455,6 +455,9 @@ event adapt (i++,last) {
 }
 #endif
 
+#if LevelSet
+event LS_reinitialization(i++,last);
+#endif
 /**
 ## See also
 

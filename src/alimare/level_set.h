@@ -28,8 +28,5 @@ event LS_advection (i++,last) {
 /**
 Reinitialization method can be chosen by overloading this function */
 
-// event LS_reinitialization(i++,last) {
-
-
-	
-// }
+event LS_reinitialization(i++,last) {
+}
