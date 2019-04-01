@@ -202,7 +202,15 @@ event init (i = 0) {
   foreach() {
 
     #if LevelSet
-    dist[] = clamp(LS_vert[] ,-NB_width,NB_width);
+    
+// bilinear interpolation of the LS_vert field
+
+    double delta1 = LS_vert[1,0] - LS_vert[];
+    double delta2 = LS_vert[0,1] - LS_vert[];
+    double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
+
+    dist[] = clamp(1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[] ,
+      -NB_width/5.,NB_width/5.);
     #endif
 
     temperature_L[] = f[]*TL_inf;
