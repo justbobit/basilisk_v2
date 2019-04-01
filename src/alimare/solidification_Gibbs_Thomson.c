@@ -396,12 +396,12 @@ event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
               min = 0, max = 1);
   #if LevelSet
   output_ppm (dist, n = 512, linear = true, file = "LS.gif", 
-    opt = "--delay 1");
+    opt = "--delay 1", min = -NB_width/5., max = NB_width/5.);
   #endif
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
-  output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", \
-   opt = "--delay 1", min = -0.9, max = 0);
+  // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", \
+  //  opt = "--delay 1", min = -0.9, max = 0);
 
   // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", opt = "--delay 1",
   //   min = -0.2, max = 0);
