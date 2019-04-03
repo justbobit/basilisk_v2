@@ -255,22 +255,33 @@ The level set function is known to have diffusion issues therefore it needs to b
 void LS_reinit(scalar dist, double dt, double NB){
   vector gr_LS[];
   int i ;
-  double delt,res=-HUGE;
+  double eps = 1.e-8;
 
-  for (i = 1; i<=10;i++){
+  for (i = 1; i<=100 ; i++){
+    double res=-100.;
     foreach(reduction(max:res)){
+      double delt;
       if(fabs(dist[])<NB/5.){
         foreach_dimension(){
           delt        = 0.;
-          gr_LS.x[]   = (dist[-1,0] + dist[1,0]-2.*dist[])/(2*Delta);
+          if(dist[]>0){
+            gr_LS.x[]   = max(max(0., (dist[]    - dist[-1,0])/Delta),
+                              min(0., (dist[1,0] - dist[])    /Delta)) -1.;
+          }
+          else
+          {
+            gr_LS.x[]   = max(min(0., (dist[]    - dist[-1,0])/Delta),
+                              max(0., (dist[1,0] - dist[])    /Delta)) -1.; 
+          } 
           delt       += gr_LS.x[]*gr_LS.x[];
         }
         delt    = sqrt(delt);
-        dist[] += signbit(dist[])*(1-delt)*dt;
+        dist[] *= delt*10.*dt/sqrt(dist[]*dist[] + Delta*Delta);
         if(delt>=res) res = delt;
       }
     }
-    printf("%d %f %f \n",i,res, dt);
+    printf("%d %6.2e %6.2e %f \n",i,res-1.,eps, dt);
+    if(fabs(res-1.)<eps) break;
   }
 }
 
