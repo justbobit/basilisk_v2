@@ -256,7 +256,11 @@ void LS_reinit(scalar dist, double dt, double NB){
   vector gr_LS[];
   int i ;
   double eps = 1.e-8;
+  scalar dist0[];
 
+  foreach(){
+    dist0[] = dist[] ;
+  }
   for (i = 1; i<=100 ; i++){
     double res=-100.;
     foreach(reduction(max:res)){
