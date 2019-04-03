@@ -278,10 +278,11 @@ event stability (i++) {
 
     for (scalar t in tracers) {    
       face vector tv[];
-      phase_change_velocity (f, t, tv, L_H);
+      // phase_change_velocity (f, t, tv, L_H);
       foreach_face(){
-        v_pc.x[]  += tv.x[]*tv.x[] ;
-        uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
+        // v_pc.x[]  += tv.x[]*tv.x[] ;
+        // uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
+        uf.x[]    += 1.;
       }
     }
     double dtmax2 = DT_MAX;
@@ -364,11 +365,13 @@ event adapt (i++) {
 
 // Reinitialization of the LS fucntion
 
-event LS_reinitialization(i+=10,last){
-  // LS_reinit(dist,dt, NB_width);
-  foreach()
-    dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
-  boundary({dist});
+event LS_reinitialization(i+=50,last){
+  if(i>29){
+    LS_reinit(dist,dt, NB_width);
+    // foreach()
+    //  dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
+    boundary({dist});
+  }
 }
 
 /**
@@ -377,7 +380,8 @@ event LS_reinitialization(i+=10,last){
 We now juste have to save the video.
 */
 
-event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
+// event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
+event movie (i+=10  ; i<=400 )
 {
   stats s = statsf (tr_eq);
 
