@@ -303,43 +303,63 @@ V2 of the reinit function with subcell correction.
 
 */
 
-// void LS_reinit2(scalar dist, double dt, double NB){
-//   vector gr_LS[];
-//   int i ;
-//   double eps = 1.e-8;
-//   scalar dist0[];
 
-//   foreach(){
-//     dist0[] = dist[] ;
-//   }
-//   for (i = 1; i<=100 ; i++){
-//     double res=-100.;
-//     foreach(reduction(max:res)){
-//       double delt =0.;
-      
-//       foreach_dimension(){
-//         if(dist[-1,0]*dist[] < 0 | dist[1,0]*dist[]){
-//           double Di = 2.* Delta * dist0[]/fabs(dist0[1,0]-dist0[-1,0]);
-//           delt += (sign(dist0[])*fabs(dist[])-Di)/Delta;
-//         }
-//         else if(dist0[]>0){
-//           delt   += max(max(0., (dist[]    - dist[-1,0])/Delta),
-//                             min(0., (dist[1,0] - dist[])    /Delta)) -1.;
-//         }
-//         else
-//         {
-//           delt   -= (max(min(0., (dist[]    - dist[-1,0])/Delta),
-//                             max(0., (dist[1,0] - dist[])    /Delta)) -1.); 
-//         } 
-//       }
-//       dist[] = dist[] - 0.5*Delta*delt;
-//       if(delt>=res) res = delt;
-//     }
-//     boundary({dist});
-//     printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
-//     if(fabs(res)<eps) break;
-//   }
-// }
+void LS_reinit2(scalar dist, double dt, double NB){
+  vector gr_LS[];
+  int i, it_max=1 ;
+  double eps = 1.e-5;
+  scalar dist0[];
+
+  foreach(){
+    dist0[] = dist[] ;
+  }
+  for (i = 1; i<=it_max ; i++){
+    double res=-100.;
+    foreach(reduction(max:res)){
+      double delt =0.;
+      if(fabs(dist[])<NB/5.){
+        //min_neighb : variable for detection if cell is near
+        // the zero level set
+
+        double min_neighb = 1.;
+        foreach_dimension(){
+          min_neighb = min (min_neighb, dist[-1,0]*dist[]);
+          min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
+        }
+
+        if(min_neighb < 0.){
+          foreach_dimension(){
+            delt += powf(dist0[1,0]-dist0[-1,0],2.);
+          }
+          delt =(sign2(dist0[])*fabs(dist[])
+                  -(2.*Delta*dist0[])/sqrt(delt) )/Delta;
+        }
+        else if(dist0[]>0){
+          foreach_dimension(){
+            delt   += max(max(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
+                          min(0., powf((dist[1,0] - dist[])    /Delta,2.)));
+          }
+          delt = sign2(dist0[])*(sqrt(delt) - 1.);
+        }
+        else{
+          foreach_dimension(){
+            delt   += max(min(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
+                          max(0., powf((dist[1,0] - dist[])/Delta,2.)));
+          }
+          delt = sign2(dist0[])*(sqrt(delt) - 1.);
+        } 
+        dist[] = dist[] - 0.5*dt*delt;
+        if(delt>=res) res = delt;
+      }
+    }
+    boundary({dist});
+    if(fabs(res)<eps){
+      printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
+      break;
+    }
+    if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
+  }
+}
 
 /**
 ## Further improvements
