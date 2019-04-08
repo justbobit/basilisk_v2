@@ -290,6 +290,56 @@ void LS_reinit(scalar dist, double dt, double NB){
   }
 }
 
+// // sign function
+
+// double sign (double x)
+// {
+//   return(x > 0. ? 1. : x<0 ? -1. : 0.);
+// }
+// /**
+// V2 of the reinit function with subcell correction.
+
+// */
+
+
+// void LS_reinit2(scalar dist, double dt, double NB){
+//   vector gr_LS[];
+//   int i ;
+//   double eps = 1.e-8;
+//   scalar dist0[];
+
+//   foreach(){
+//     dist0[] = dist[] ;
+//   }
+//   for (i = 1; i<=100 ; i++){
+//     double res=-100.;
+//     foreach(reduction(max:res)){
+//       double delt =0.;
+      
+//       foreach_dimension(){
+//         if(dist[-1,0]*dist[] < 0 | dist[1,0]*dist[]){
+//           double Di = 2.* Delta * dist0[]/fabs(dist0[1,0]-dist0[-1,0]);
+//           delt += (sign(dist0[])*fabs(dist[])-Di)/Delta;
+//         }
+//         else if(dist0[]>0){
+//           delt   += max(max(0., (dist[]    - dist[-1,0])/Delta),
+//                             min(0., (dist[1,0] - dist[])    /Delta)) -1.;
+//         }
+//         else
+//         {
+//           delt   -= (max(min(0., (dist[]    - dist[-1,0])/Delta),
+//                             max(0., (dist[1,0] - dist[])    /Delta)) -1.); 
+//         } 
+//       }
+//       dist[] = dist[] - 0.5*Delta*delt;
+//       if(delt>=res) res = delt;
+//     }
+//     boundary({dist});
+//     printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
+//     if(fabs(res)<eps) break;
+//   }
+// }
+
 /**
 ## Further improvements
 
