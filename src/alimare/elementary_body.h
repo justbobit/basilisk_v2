@@ -266,8 +266,8 @@ void LS_reinit(scalar dist, double dt, double NB){
     foreach(reduction(max:res)){
       double delt;
       if(fabs(dist[])<NB/5.){
+        delt  = 0.;
         foreach_dimension(){
-          delt        = 0.;
           if(dist[]>0){
             gr_LS.x[]   = max(max(0., (dist[]    - dist[-1,0])/Delta),
                               min(0., (dist[1,0] - dist[])    /Delta)) -1.;
@@ -277,13 +277,14 @@ void LS_reinit(scalar dist, double dt, double NB){
             gr_LS.x[]   = max(min(0., (dist[]    - dist[-1,0])/Delta),
                               max(0., (dist[1,0] - dist[])    /Delta)) -1.; 
           } 
-          delt       += gr_LS.x[]*gr_LS.x[];
+          delt += gr_LS.x[];
+          dist[] -= gr_LS.x[]*0.5*dt*dist0[]/sqrt(dist0[]*dist0[] + Delta*Delta);
         }
-        delt    = sqrt(delt);
-        dist[] *= delt*10.*dt/sqrt(dist[]*dist[] + Delta*Delta);
+        
         if(delt>=res) res = delt;
       }
     }
+    boundary({dist});
     printf("%d %6.2e %6.2e %f \n",i,res-1.,eps, dt);
     if(fabs(res-1.)<eps) break;
   }
