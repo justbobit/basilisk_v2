@@ -255,7 +255,7 @@ The level set function is known to have diffusion issues therefore it needs to b
 void LS_reinit(scalar dist, double dt, double NB){
   vector gr_LS[];
   int i ;
-  double eps = 1.e-8;
+  double eps = 1.e-5;
   scalar dist0[];
 
   foreach(){
@@ -277,16 +277,18 @@ void LS_reinit(scalar dist, double dt, double NB){
             gr_LS.x[]   = max(min(0., (dist[]    - dist[-1,0])/Delta),
                               max(0., (dist[1,0] - dist[])    /Delta)) -1.; 
           } 
-          delt += gr_LS.x[];
-          dist[] -= gr_LS.x[]*0.5*dt*dist0[]/sqrt(dist0[]*dist0[] + Delta*Delta);
+          delt += gr_LS.x[]*0.5*dt*dist0[]/sqrt(dist0[]*dist0[] + Delta*Delta);
         }
+        dist[] -= delt;
         
         if(delt>=res) res = delt;
       }
     }
     boundary({dist});
-    printf("%d %6.2e %6.2e %f \n",i,res-1.,eps, dt);
-    if(fabs(res-1.)<eps) break;
+    if(fabs(res)<eps){
+      // printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
+      break;
+    } 
   }
 }
 
