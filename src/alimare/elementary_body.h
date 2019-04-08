@@ -294,15 +294,14 @@ void LS_reinit(scalar dist, double dt, double NB){
 
 // // sign function
 
-// double sign (double x)
-// {
-//   return(x > 0. ? 1. : x<0 ? -1. : 0.);
-// }
-// /**
-// V2 of the reinit function with subcell correction.
+double sign2 (double x)
+{
+  return(x > 0. ? 1. : x<0 ? -1. : 0.);
+}
+/**
+V2 of the reinit function with subcell correction.
 
-// */
-
+*/
 
 // void LS_reinit2(scalar dist, double dt, double NB){
 //   vector gr_LS[];
