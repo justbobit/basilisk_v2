@@ -300,7 +300,17 @@ double sign2 (double x)
 }
 /**
 V2 of the reinit function with subcell correction.
+Based on the work of Russo2000.
+phi^n+1 = phi^n - Delta t S(phi) G(phi) far from the interface
+Near the interface it is modified to :
+phi^n+1 = phi^n - Delta t/Delta x ( sgn(phi^0) |phi^n| - Di)
 
+with:
+Di = Delta x * phi_i^0/Delta phi_0^i
+
+with:  
+Delta phi_0^i = max((phi^0_{i-1}-phi^0_{i+1})/2,phi^0_{i-1}-phi^0_{i},
+phi^0_{i}-phi^0_{i+1})
 */
 
 
