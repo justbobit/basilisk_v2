@@ -20,7 +20,7 @@ We define the geometrical, temporal and resolution parameters: */
 #define F_ERR 1e-10
 
 #define T_END   5.
-#define DT_MAX  0.1
+#define DT_MAX  L0/(1 << MAX_LEVEL)*0.8
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
 #define NB_width L0/5.// NarrowBand_width for level_set
