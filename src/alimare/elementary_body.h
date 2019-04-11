@@ -316,8 +316,8 @@ phi^0_{i}-phi^0_{i+1})
 
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
-  int i, it_max=1 ;
-  double eps = 1.e-5;
+  int i, it_max=100000 ;
+  double eps = 1.e-4;
   scalar dist0[];
 
   foreach(){
@@ -330,7 +330,7 @@ void LS_reinit2(scalar dist, double dt, double NB){
       double xCFL = 1.;
       if(fabs(dist[])<NB/5.){
         //min_neighb : variable for detection if cell is near
-        // the zero level set
+        //             the zero of the level set function
 
         double min_neighb = 1.;
         foreach_dimension(){
