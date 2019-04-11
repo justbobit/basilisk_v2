@@ -327,6 +327,7 @@ void LS_reinit2(scalar dist, double dt, double NB){
     double res=-100.;
     foreach(reduction(max:res)){
       double delt =0.;
+      double xCFL = 1.;
       if(fabs(dist[])<NB/5.){
         //min_neighb : variable for detection if cell is near
         // the zero level set
@@ -338,13 +339,22 @@ void LS_reinit2(scalar dist, double dt, double NB){
         }
 
         if(min_neighb < 0.){
+          double dist1= 0., dist2= 0.,dist3= 0.;
           foreach_dimension(){
-            delt += powf(dist0[1,0]-dist0[-1,0],2.);
+            dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
+            dist2 += powf((dist0[1,0]-dist0[    ]),2.);
+            dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
           }
-          delt =(sign2(dist0[])*fabs(dist[])
-                  -(2.*Delta*dist0[])/sqrt(delt) )/Delta;
+          double eps = 1.e-10;
+          double Dij = Delta*dist0[]/
+                  sqrt(max(dist1,max(dist2,max(dist3,0.1))));
+          delt = (sign2(dist0[])*fabs(dist[])-Dij)/Delta;
+// stability condition near the interface is modified
+// xCFL = min(xCFL,Dij/(Delta)); // this should work in theory
+          xCFL = min(xCFL,Dij/(Delta));       
         }
-        else if(dist0[]>0){
+        else 
+          if(dist0[]>0){
           foreach_dimension(){
             delt   += max(max(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
                           min(0., powf((dist[1,0] - dist[])    /Delta,2.)));
@@ -354,11 +364,11 @@ void LS_reinit2(scalar dist, double dt, double NB){
         else{
           foreach_dimension(){
             delt   += max(min(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
-                          max(0., powf((dist[1,0] - dist[])/Delta,2.)));
-          }
-          delt = sign2(dist0[])*(sqrt(delt) - 1.);
-        } 
-        dist[] = dist[] - 0.5*dt*delt;
+                           max(0., powf((dist[1,0] - dist[])/Delta,2.)));
+           }
+           delt = sign2(dist0[])*(sqrt(delt) - 1.);
+        }
+        dist[] -= xCFL*dt*delt;
         if(delt>=res) res = delt;
       }
     }
