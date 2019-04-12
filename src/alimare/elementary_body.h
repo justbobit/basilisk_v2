@@ -316,26 +316,54 @@ phi^0_{i}-phi^0_{i+1})
 
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
-  int i, it_max=100000 ;
-  double eps = 1.e-4;
-  scalar dist0[];
-
-  foreach(){
+  int i, it_max=100 ;
+  double eps = dt/20., eps2 = 1.e-6;
+  scalar dist0[], dist_eps[];
+  double xCFL = 0.8;
+// 1) we make a copy of dist before iterating on it
+// 2) we determine xCFL according to the local size
+  foreach(reduction(min:xCFL)){
     dist0[] = dist[] ;
+    if(fabs(dist[])<NB/5.){
+      //min_neighb : variable for detection if cell is near
+      //             the zero of the level set function
+
+      double min_neighb = 1.;
+      foreach_dimension(){
+        min_neighb = min (min_neighb, dist[-1,0]*dist[]); 
+        min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
+      }
+
+      if(min_neighb < 0.){
+        double dist1= 0., dist2= 0.,dist3= 0.;
+        foreach_dimension(){
+          dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
+          dist2 += powf((dist0[1,0]-dist0[    ]),2.);
+          dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+        }
+        double Dij = Delta*dist0[]/
+                max(eps2,sqrt(max(dist1,max(dist2,dist3))));
+// stability condition near the interface is modified
+        xCFL = min(xCFL,0.1*fabs(Dij)/(Delta));       
+      }
+    }
   }
   for (i = 1; i<=it_max ; i++){
-    double res=-100.;
+    double res=0.;
+    foreach(){
+      dist_eps[] = dist[] ;
+    }
+    
     foreach(reduction(max:res)){
       double delt =0.;
-      double xCFL = 1.;
       if(fabs(dist[])<NB/5.){
         //min_neighb : variable for detection if cell is near
         //             the zero of the level set function
 
         double min_neighb = 1.;
         foreach_dimension(){
-          min_neighb = min (min_neighb, dist[-1,0]*dist[]);
-          min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
+          min_neighb = min (min_neighb, dist_eps[-1,0]*dist_eps[]);
+          min_neighb = min (min_neighb, dist_eps[ 1,0]*dist_eps[]);
         }
 
         if(min_neighb < 0.){
@@ -345,54 +373,36 @@ void LS_reinit2(scalar dist, double dt, double NB){
             dist2 += powf((dist0[1,0]-dist0[    ]),2.);
             dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
           }
-          double eps = 1.e-10;
           double Dij = Delta*dist0[]/
-                  sqrt(max(dist1,max(dist2,max(dist3,0.1))));
-          delt = (sign2(dist0[])*fabs(dist[])-Dij)/Delta;
-// stability condition near the interface is modified
-// xCFL = min(xCFL,Dij/(Delta)); // this should work in theory
-          xCFL = min(xCFL,Dij/(Delta));       
+                  max(eps2,sqrt(max(dist1,max(dist2,dist3))));
+          delt = (sign2(dist0[])*fabs(dist_eps[])-Dij)/Delta;
         }
         else 
           if(dist0[]>0){
           foreach_dimension(){
-            delt   += max(max(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
-                          min(0., powf((dist[1,0] - dist[])    /Delta,2.)));
+            delt   += max(max(0.,\  
+            powf((dist_eps[]    - dist_eps[-1,0])/Delta,2.)),\
+            min(0., powf((dist_eps[1,0] - dist_eps[])    /Delta,2.)));
           }
           delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
         else{
           foreach_dimension(){
-            delt   += max(min(0., powf((dist[]    - dist[-1,0])/Delta,2.)),
-                           max(0., powf((dist[1,0] - dist[])/Delta,2.)));
+            delt   += max(min(0., 
+              powf((dist_eps[]    - dist_eps[-1,0])/Delta,2.)),
+              max(0., powf((dist_eps[1,0] - dist_eps[])/Delta,2.)));
            }
            delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
         dist[] -= xCFL*dt*delt;
-        if(delt>=res) res = delt;
+        if(fabs(delt)>=res) res = fabs(delt);
       }
     }
     boundary({dist});
-    if(fabs(res)<eps){
-      printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
+    printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
+    if(res<eps){
       break;
     }
     if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
   }
 }
-
-/**
-## Further improvements
-
-Reading the work of Leon Malan, we can list at least three possible improvements
-of what it is done here. Two of them are based on the idea to take advantage of
-our precise knowledge of the concentration value at the interface (saturation)
-and its position (thanks to the height function):
-
-* a better evaluation of concentration gradients at the interface,
-* choose another strategy to implemente the dirichlet condition at the interface,
-imposing a flux.
-
-The third one is to account for the Stefan flow and the recoil pressure by
-adding a term in the projection step of the resolution of the Navier-Stokes
-equation. */
