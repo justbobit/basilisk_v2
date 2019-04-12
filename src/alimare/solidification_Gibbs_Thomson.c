@@ -9,17 +9,17 @@ field](solidification_mwe_corner/video_solidification.mp4)
 
 We define the geometrical, temporal and resolution parameters: */
 
-#define H0 L0/5.
 #define L 10. // size of the box
 
 #define MIN_LEVEL 3
-#define LEVEL     4
+#define LEVEL     6
 #define MAX_LEVEL 7
-#define dH_refine (2.*L0/(1 << LEVEL))
+#define H0 L0/(1 << MIN_LEVEL)
+#define dH_refine L0/(1 << LEVEL)
 
 #define F_ERR 1e-10
 
-#define T_END   5.
+#define T_END   10.
 #define DT_MAX  L0/(1 << MAX_LEVEL)*0.8
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
@@ -169,9 +169,22 @@ double plane (double x, double y, double h)
   // double threshold2 = 2.*Pi/3.;
 
   // return (y-fabs(sin(3.*Pi*x/L0))-h);
-  // return (sqrt(y*y+x*x)-h);
-  return (y-h);
-          
+  return (sqrt(powf(y-L0/4.,2.)+powf(x-L0/4.,2.))-h);
+  // return (sqrt(powf(y-L0/2.,2.)+powf(x-L0/2.,2.))-h);
+  // return (x-h);          
+}
+
+double plane2 (double x, double y, double h)
+{
+  // double theta = atan2(x,-y);
+  // double threshold1 = Pi/3.;
+  // double threshold2 = 2.*Pi/3.;
+  double x0 = L0/4., y0= L0/4.;
+  // return (y-fabs(sin(3.*Pi*x/L0))-h);
+  return ((0.01+powf(x-x0,2.)+powf(y-y0,2.))*
+            sqrt(powf(y-y0,2.)+powf(x-x0,2.))-h);
+  // return (sqrt(powf(y-L0/2.,2.)+powf(x-L0/2.,2.))-h);
+  // return (x-h);          
 }
 
 /**
@@ -180,30 +193,31 @@ refined the grid around the future interface). */
 
 event init (i = 0) {
   scalar curve[];
-  #if LevelSet
+#if LevelSet
   vertex scalar LS_vert[];
-  #endif
-  #if TREE
+#endif
+
+#if TREE
     refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
             && plane(x, y, (H0 + dH_refine)) < 0.);
-  #endif
+#endif
 
   fraction (f, plane(x, y, H0));
 
   boundary({f});
   curvature (f,curve);
   boundary({curve});
-  #if LevelSet
+#if LevelSet
   foreach_vertex(){
-    LS_vert[] = plane(x,y,H0);
+    LS_vert[] = plane2(x,y,H0);
   }
   boundary({LS_vert});
-  #endif
+#endif
 
   foreach() {
 
 
-    #if LevelSet
+#if LevelSet
     
 // bilinear interpolation of the LS_vert field
 
@@ -213,7 +227,7 @@ event init (i = 0) {
 
     dist[] = clamp(1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[] ,
       -NB_width/5.,NB_width/5.);
-    #endif
+#endif
 
     temperature_L[] = f[]*TL_inf;
     temperature_S[] = (1. - f[])*TS_inf;
@@ -227,7 +241,8 @@ event init (i = 0) {
 
   output_ppm (f, n=600, file = "init.png"\
   , min = 0., max = 1.); 
-  output_ppm (dist, n=600, file = "level_set_init.png"); 
+  output_ppm (dist, n=600, file = "level_set_init.png",
+       min = -NB_width/5., max = NB_width/5.); 
 
 
   scalar l[];
@@ -288,10 +303,15 @@ event stability (i++) {
     for (scalar t in tracers) {    
       face vector tv[];
       // phase_change_velocity (f, t, tv, L_H);
-      foreach_face(y){
+      foreach_face(x){
         // v_pc.x[]  += tv.x[]*tv.x[] ;
         // uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
-        uf.y[]    += 1.;
+        // uf.x[]    += 0.25;
+        uf.x[]    += 0.;
+      }
+      foreach_face(y){
+        // uf.y[]    += 0.5;
+        uf.y[]    += 0.;
       }
     }
     double dtmax2 = DT_MAX;
@@ -374,13 +394,11 @@ event adapt (i++) {
 
 // Reinitialization of the LS fucntion
 
-event LS_reinitialization(i+=25,last){
-  if(i>20){
-    printf("%f %d %f \n",L0,MAX_LEVEL,L0/(1 << MAX_LEVEL));
-    LS_reinit(dist,L0/(1 << MAX_LEVEL), NB_width);
+event LS_reinitialization(i+=50,last){
+  if(i>15){
+    LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width);
     // foreach()
     //  dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
-    boundary({dist});
   }
 }
 
@@ -392,16 +410,18 @@ event LS_reinitialization(i+=25,last){
 We now juste have to save the video.
 */
 
-event image_finale(i = 99)
+
+
+event image_finale(i = 401)
 {
   boundary ({dist});
-  output_ppm (dist, n=600, file = "level_set_final.png", 
+  output_ppm (dist, n=600, file = "level_set_final_reinit2.png", 
     min = -NB_width/5., max = NB_width/5.); 
 }
 
 
 // event movie (t = 0.; t += max(DELTA_T, DT); t <= T_END)
-event movie (i+=5  ; i<=100)
+event movie (i+=5  ; i<=401)
 {
   stats s = statsf (tr_eq);
 
@@ -420,11 +440,11 @@ event movie (i+=5  ; i<=100)
               min = 0, max = 1);
   #if LevelSet
   output_ppm (dist, n = 512, linear = true, file = "LS_reinit.gif", 
-    opt = "--delay 1", min = -NB_width/5., max = NB_width/5.);
+    opt = "--delay 1",min = -NB_width/10., max = NB_width/10.);
   #endif
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
-  // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", \
+  // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", 
   //  opt = "--delay 1", min = -0.9, max = 0);
 
   // output_ppm (tr_eq, n = 512, linear = true, file = "T_solid.gif", opt = "--delay 1",
