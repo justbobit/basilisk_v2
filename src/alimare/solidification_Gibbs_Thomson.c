@@ -13,9 +13,8 @@ We define the geometrical, temporal and resolution parameters: */
 
 #define MIN_LEVEL 3
 #define LEVEL     6
-#define MAX_LEVEL 7
+#define MAX_LEVEL 8
 #define H0 L0/(1 << MIN_LEVEL)
-#define dH_refine 3*L0/(1 << LEVEL)
 
 #define F_ERR 1e-10
 
@@ -23,7 +22,8 @@ We define the geometrical, temporal and resolution parameters: */
 #define DT_MAX  L0/(1 << MAX_LEVEL)*0.8
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
-#define NB_width L0/5.// NarrowBand_width for level_set
+#define NB_width L0/(1 << (LEVEL-2))// NarrowBand_width for level_set
+
 
 /**
 Solvers used :
@@ -199,8 +199,8 @@ event init (i = 0) {
 #endif
 
 #if TREE
-    refine (level < MAX_LEVEL && plane(x, y, (H0 - dH_refine)) > 0.
-            && plane(x, y, (H0 + dH_refine)) < 0.);
+    refine (level < MAX_LEVEL && plane(x, y, (H0 - NB_width)) > 0.
+            && plane(x, y, (H0 + NB_width)) < 0.);
 #endif
 
   fraction (f, plane(x, y, H0));
@@ -243,7 +243,7 @@ event init (i = 0) {
   output_ppm (f, n=600, file = "init.png"\
   , min = 0., max = 1.); 
   output_ppm (dist, n=600, file = "level_set_init.png",
-       min = -NB_width/5., max = NB_width/5.); 
+       min = -NB_width, max = NB_width); 
 
 
   scalar l[];
@@ -387,7 +387,7 @@ event tracer_diffusion(i++) {
 #if TREE
 event adapt (i++) {
   adapt_wavelet ({f, dist},\
-                 (double[]){1e-3, 1e-3, 1e-3}, minlevel = MIN_LEVEL, \
+                 (double[]){1e-1, 1e-1}, minlevel = MIN_LEVEL, \
                  maxlevel = MAX_LEVEL);
 }
 #endif
@@ -397,7 +397,7 @@ event adapt (i++) {
 
 event LS_reinitialization(i+=50,last){
   if(i>15){
-    // LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width);
+    LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width/2.);
     // foreach()
     //  dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
   }
@@ -416,7 +416,7 @@ event image_finale(i = 401)
 {
   boundary ({dist});
   output_ppm (dist, n=600, file = "level_set_final_reinit2.png", 
-    min = -NB_width/5., max = NB_width/5.); 
+    min = -NB_width, max = NB_width); 
 }
 
 
@@ -436,11 +436,14 @@ event movie (i+=5  ; i<=401)
   }
   boundary ({f, temperature,tr_eq,dist});
 
-  output_ppm (f, n = 512, linear = true, file = "f.gif", opt = "--delay 1",\
-              min = 0, max = 1);
+  scalar l[];
+  foreach()
+    l[] = level;
+  // static FILE * fp = fopen ("grid.gif", "w");
+  output_ppm (l, n = 512, file="grid.gif", min = MIN_LEVEL, max = MAX_LEVEL);
   #if LevelSet
   output_ppm (dist, n = 512, linear = true, file = "LS_reinit.gif", 
-    opt = "--delay 1",min = -NB_width/10., max = NB_width/10.);
+    opt = "--delay 1",min = -NB_width, max = NB_width);
   #endif
   output_ppm (temperature, n = 512, linear = true, file = "T.gif", opt = "--delay 1",min = -2, max = 0);
 
