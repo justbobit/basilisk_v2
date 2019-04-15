@@ -12,14 +12,21 @@ scheme. */
 
 #include "advection.h"
 #include "vof.h"
+#include "alimare/level_set.h"
+#include "alimare/elementary_body.h"
+
+int NB_width;
+
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
 an *interface* for the VOF solver. We do not advect any tracer with
 the default (diffusive) advection scheme of the advection solver. */
 
-scalar f[];
+scalar f[], dist[];
 scalar * interfaces = {f}, * tracers = NULL;
+scalar * level_set = {dist};
+
 int MAXLEVEL;
 
 /**
@@ -54,7 +61,22 @@ We define the levelset function $\phi$ on each vertex of the grid and
 compute the corresponding volume fraction field. */
 
 event init (i = 0) {
+    vertex scalar LS_vert[];
+
   fraction (f, circle(x,y));
+  foreach_vertex(){
+    LS_vert[] = circle(x,y);
+  }
+  boundary({LS_vert});
+  foreach() {
+    double delta1 = LS_vert[1,0] - LS_vert[];
+    double delta2 = LS_vert[0,1] - LS_vert[];
+    double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
+
+    dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
+  }
+
+
 }
 
 event velocity (i++) {
@@ -68,7 +90,7 @@ event velocity (i++) {
   `f`. */
 
 #if TREE
-  adapt_wavelet ({f}, (double[]){5e-3}, MAXLEVEL, list = {f});
+  adapt_wavelet ({f,dist}, (double[]){5e-3, 5e-3}, MAXLEVEL, list = {f,dist});
 #endif
 
   /**
@@ -137,9 +159,24 @@ event levels (t = T/2) {
     foreach()
       l[] = level;
     output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
+
+    foreach()
+      l[] = f[];
+    output_ppm (l, file = "f_reversed.png", n = 400, min = 0, max = 1);
+
+    foreach()
+      l[] = dist[];
+    output_ppm (l, file = "dist.png", n = 400, min = -NB_width, max = NB_width);
   }
 }
 #endif
+
+event LS_reinitialization(i+=400,last){
+  if(i>15){
+    NB_width = L0/(1 << (MAXLEVEL-2));// NarrowBand_width for level_set
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
+  }
+}
 
 #if 0
 event movie (i += 10)
