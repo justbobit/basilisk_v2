@@ -316,7 +316,7 @@ phi^0_{i}-phi^0_{i+1})
 
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
-  int i, it_max=100 ;
+  int i, it_max=1000 ;
   double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
   double xCFL = 0.8;
@@ -400,8 +400,8 @@ void LS_reinit2(scalar dist, double dt, double NB){
       }
     }
     boundary({dist});
-    printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
     if(res<eps){
+      printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
       break;
     }
     if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
