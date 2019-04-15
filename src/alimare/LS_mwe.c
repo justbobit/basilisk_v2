@@ -1,24 +1,21 @@
 
 /**
-# Solidification with a plane interface
+## Minimum working example of a Level Set function
 
-We investigate the solidification of a block of undercooledwater, between four plates, two at -20°C and two at +20°C. It serves at minimum working example to show how the functions defined in [elementary_body.h](/sandbox/alimare/elementary_body.h) which is dervied from : [elementary_body.h](/sandbox/qmagdelaine/phase_change/elementary_body.h). I simply added the possbility for tr_{eq} to be a field in the dirichlet_diffusion definition.
-
-![Solification of a block of water with the temperature
-field](solidification_mwe_corner/video_solidification.mp4)
+The level_set function is only properly defined in a narrow band. The level_set function is advected using the BCG solver.
 
 We define the geometrical, temporal and resolution parameters: */
 
 #define L 10. // size of the box
 
 #define MIN_LEVEL 3
-#define LEVEL     6
-#define MAX_LEVEL 8
+#define LEVEL     5
+#define MAX_LEVEL 7
 #define H0 L0/(1 << MIN_LEVEL)
 
 
 #define T_END   10.
-#define DT_MAX  L0/(1 << MAX_LEVEL)*0.8
+#define DT_MAX  L0/(1 << MAX_LEVEL+1)*0.8
 #define DELTA_T 0.1 // for videos and measurements
 #define Pi 3.141592653589793
 #define NB_width L0/(1 << (LEVEL-2))// NarrowBand_width for level_set
@@ -27,19 +24,21 @@ We define the geometrical, temporal and resolution parameters: */
 Solvers used :
 
 Navier-Stokes
-Surface tension is also modeled.
+We have modified the navier-stokes/centered.h solver to add an advection event and a reinitialization event for the LS function. 
 */
 #define LevelSet 1
 
 #include "navier-stokes/centered.h"
+/**
+Several functions specific to the level_set method have been added to Q. Magdelaine elementary_body.h  
+
+*/ 
 #include "alimare/elementary_body.h"
+
 
 #if LevelSet
 # include "alimare/level_set.h"
 #endif
-/**
-Level set function is used
-*/
 
 #define Ray_min               10.*L0
 #define Precoeff              5.*(T_eq-TS_inf)/(SIGMA*Ray_min)
@@ -61,7 +60,7 @@ int main()
   size (L);
   // origin (0., -L0/2.);
   origin (0., 0.);
-  N  = 1 << LEVEL;
+  N  = 1 << MIN_LEVEL;
   init_grid (N);
   DT = DT_MAX;
   run();
@@ -161,13 +160,12 @@ event init (i = 0) {
 
 event stability (i++) {
   DT = DT_MAX;
-  face vector tv[];
-  foreach_face(x){
-    uf.x[]    += 0.25;
-  }
-  foreach_face(y){
-    uf.y[]    += 0.5;
-  }
+  // foreach_face(x){
+  //   uf.x[]    += 0.25;
+  // }
+  // foreach_face(y){
+  //   uf.y[]    += 0.5;
+  // }
   double dtmax2 = DT_MAX;
   timestep (uf, dtmax2);
   boundary((scalar*){uf});
@@ -198,22 +196,18 @@ event adapt (i++) {
 #endif
 
 
-// Reinitialization of the LS fucntion
+/**
+## Reinitialization of the LS fucntion */
 
-event LS_reinitialization(i+=50,last){
+event LS_reinitialization(i+=400,last){
   if(i>15){
     LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width/2.);
   }
 }
-
-
 /**
 ## Video
-
 We now juste have to save the video.
 */
-
-
 
 event image_finale(i = 401)
 {
@@ -222,13 +216,10 @@ event image_finale(i = 401)
     min = -NB_width, max = NB_width); 
 }
 
-
 event movie (i+=5  ; i<=401)
 {
-
   printf ( "%d %f \n", i, t);
   boundary ({f, dist});
-
   scalar l[];
   foreach()
     l[] = level;
