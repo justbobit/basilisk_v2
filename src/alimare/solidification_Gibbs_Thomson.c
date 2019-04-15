@@ -15,7 +15,7 @@ We define the geometrical, temporal and resolution parameters: */
 #define LEVEL     6
 #define MAX_LEVEL 7
 #define H0 L0/(1 << MIN_LEVEL)
-#define dH_refine L0/(1 << LEVEL)
+#define dH_refine 3*L0/(1 << LEVEL)
 
 #define F_ERR 1e-10
 
@@ -181,11 +181,12 @@ double plane2 (double x, double y, double h)
   // double threshold2 = 2.*Pi/3.;
   double x0 = L0/4., y0= L0/4.;
   // return (y-fabs(sin(3.*Pi*x/L0))-h);
-  return ((0.01+powf(x-x0,2.)+powf(y-y0,2.))*
+  return ((0.1+powf(x-x0,2.)+powf(y-y0,2.))*
             sqrt(powf(y-y0,2.)+powf(x-x0,2.))-h);
   // return (sqrt(powf(y-L0/2.,2.)+powf(x-L0/2.,2.))-h);
   // return (x-h);          
 }
+
 
 /**
 Before the first step, we initialize the temperature fields (after having
@@ -225,9 +226,9 @@ event init (i = 0) {
     double delta2 = LS_vert[0,1] - LS_vert[];
     double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
 
-    dist[] = clamp(1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[] ,
-      -NB_width/5.,NB_width/5.);
+    dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
 #endif
+
 
     temperature_L[] = f[]*TL_inf;
     temperature_S[] = (1. - f[])*TS_inf;
@@ -306,12 +307,12 @@ event stability (i++) {
       foreach_face(x){
         // v_pc.x[]  += tv.x[]*tv.x[] ;
         // uf.x[]    += (t.inverse ? tv.x[] : - tv.x[]);
-        // uf.x[]    += 0.25;
-        uf.x[]    += 0.;
+        uf.x[]    += 0.25;
+        // uf.x[]    += 0.;
       }
       foreach_face(y){
-        // uf.y[]    += 0.5;
-        uf.y[]    += 0.;
+        uf.y[]    += 0.5;
+        // uf.y[]    += 0.;
       }
     }
     double dtmax2 = DT_MAX;
@@ -396,12 +397,11 @@ event adapt (i++) {
 
 event LS_reinitialization(i+=50,last){
   if(i>15){
-    LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width);
+    // LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width);
     // foreach()
     //  dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
   }
 }
-
 
 
 /**
