@@ -317,7 +317,7 @@ phi^0_{i}-phi^0_{i+1})
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
   int i, it_max=100 ;
-  double eps = dt/20., eps2 = 1.e-6;
+  double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
   double xCFL = 0.8;
 // 1) we make a copy of dist before iterating on it
@@ -344,7 +344,7 @@ void LS_reinit2(scalar dist, double dt, double NB){
         double Dij = Delta*dist0[]/
                 max(eps2,sqrt(max(dist1,max(dist2,dist3))));
 // stability condition near the interface is modified
-        xCFL = min(xCFL,0.1*fabs(Dij)/(Delta));       
+        xCFL = min(xCFL,fabs(Dij)/(Delta));
       }
     }
   }
@@ -353,10 +353,11 @@ void LS_reinit2(scalar dist, double dt, double NB){
     foreach(){
       dist_eps[] = dist[] ;
     }
+    boundary({dist_eps});
     
     foreach(reduction(max:res)){
       double delt =0.;
-      if(fabs(dist[])<NB/5.){
+      if(fabs(dist_eps[])<NB/5.){
         //min_neighb : variable for detection if cell is near
         //             the zero of the level set function
 
@@ -380,17 +381,17 @@ void LS_reinit2(scalar dist, double dt, double NB){
         else 
           if(dist0[]>0){
           foreach_dimension(){
-            delt   += max(max(0.,\  
-            powf((dist_eps[]    - dist_eps[-1,0])/Delta,2.)),\
-            min(0., powf((dist_eps[1,0] - dist_eps[])    /Delta,2.)));
+            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
+            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
+            delt   += max(max(0.,powf(a,2.)),min(0., powf(b,2.)));
           }
           delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
         else{
           foreach_dimension(){
-            delt   += max(min(0., 
-              powf((dist_eps[]    - dist_eps[-1,0])/Delta,2.)),
-              max(0., powf((dist_eps[1,0] - dist_eps[])/Delta,2.)));
+            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
+            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
+            delt   += max(min(0.,powf(a,2.)),max(0., powf(b,2.)));
            }
            delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
