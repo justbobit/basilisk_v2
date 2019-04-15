@@ -47,6 +47,7 @@ enum {
 @define is_coarse()      ((cell).neighbors > 0)
 @define is_border(cell)  ((cell).flags & border)
 @define is_local(cell)   ((cell).pid == pid())
+@define is_vertex(cell)  ((cell).flags & vertex)
 
 // Caches
 
@@ -649,12 +650,12 @@ static inline void cache_append_face (Point point, unsigned short flags)
   Tree * q = tree;
   cache_append (&q->faces, point, flags);
 #if dimension == 2
-  if (!(cell.flags & vertex)) {
+  if (!is_vertex(cell)) {
     cache_append (&q->vertices, point, 0);
     cell.flags |= vertex;
   }
   foreach_dimension()
-    if ((flags & face_y) && !(neighbor(1).flags & vertex)) {
+    if ((flags & face_y) && !is_vertex(neighbor(1))) {
       cache_append (&q->vertices, neighborp(1), 0);
       neighbor(1).flags |= vertex;
     }
@@ -663,7 +664,7 @@ static inline void cache_append_face (Point point, unsigned short flags)
     if (flags & face_x)
       for (int i = 0; i <= 1; i++)
 	for (int j = 0; j <= 1; j++)
-	  if (!(neighbor(0,i,j).flags & vertex)) {
+	  if (!is_vertex(neighbor(0,i,j))) {
 	    cache_append (&q->vertices, neighborp(0,i,j), 0);
 	    neighbor(0,i,j).flags |= vertex;
 	  }
@@ -777,7 +778,7 @@ static void update_cache_f (void)
           #if dimension >= 3
 	    for (int k = 0; k <= 1; k++)
 	  #endif
-	      if (!(neighbor(i,j,k).flags & vertex)) {
+	      if (!is_vertex(neighbor(i,j,k))) {
 		cache_append (&q->vertices, neighborp(i,j,k), 0);
 		neighbor(i,j,k).flags |= vertex;
 	      }
@@ -866,7 +867,7 @@ static void update_cache_f (void)
 # define foreach_edge()				\
     foreach_vertex()				\
       foreach_dimension()			\
-        if (neighbor(1).flags & vertex)
+        if (is_vertex(neighbor(1)))
 #else // dimension < 3
 # define foreach_edge() foreach_face(y,x)
 #endif
@@ -1233,17 +1234,17 @@ static bool normal_neighbor (Point point, scalar * scalars, vector * vectors)
 	  Point neighbor = neighborp(i);
 	  int id = bid(cell);
 	  for (scalar s in scalars)
-	    s[] = s.boundary[id](neighbor, point, s);
+	    s[] = s.boundary[id](neighbor, point, s, NULL);
 	  for (vector v in vectors) {
 	    scalar vn = VN;
-	    v.x[] = vn.boundary[id](neighbor, point, v.x);
+	    v.x[] = vn.boundary[id](neighbor, point, v.x, NULL);
 #if dimension >= 2
 	    scalar vt = VT;
-	    v.y[] = vt.boundary[id](neighbor, point, v.y);
+	    v.y[] = vt.boundary[id](neighbor, point, v.y, NULL);
 #endif
 #if dimension >= 3
 	    scalar vr = VR;
-	    v.z[] = vr.boundary[id](neighbor, point, v.z);
+	    v.z[] = vr.boundary[id](neighbor, point, v.z, NULL);
 #endif
 	  }
 	  return true;
@@ -1268,20 +1269,21 @@ static bool diagonal_neighbor_2D (Point point,
 	      n1 = neighborp(i,0), n2 = neighborp(0,j);
 	    int id1 = bid(neighbor(i,0)), id2 = bid(neighbor(0,j));
 	    for (scalar s in scalars)
-	      s[] = (s.boundary[id1](n,n1,s) + s.boundary[id2](n,n2,s) -
+	      s[] = (s.boundary[id1](n,n1,s,NULL) +
+		     s.boundary[id2](n,n2,s,NULL) -
 		     s[i,j]);
 	    for (vector v in vectors) {
 	      scalar vt = VT, vn = VN;
-	      v.x[] = (vt.boundary[id1](n,n1,v.x) +
-		       vn.boundary[id2](n,n2,v.x) -
+	      v.x[] = (vt.boundary[id1](n,n1,v.x,NULL) +
+		       vn.boundary[id2](n,n2,v.x,NULL) -
 		       v.x[i,j]);
-	      v.y[] = (vn.boundary[id1](n,n1,v.y) +
-		       vt.boundary[id2](n,n2,v.y) -
+	      v.y[] = (vn.boundary[id1](n,n1,v.y,NULL) +
+		       vt.boundary[id2](n,n2,v.y,NULL) -
 		       v.y[i,j]);
 #if dimension == 3
 	      scalar vr = VR;
-	      v.z[] = (vr.boundary[id1](n,n1,v.z) +
-		       vr.boundary[id2](n,n2,v.z) -
+	      v.z[] = (vr.boundary[id1](n,n1,v.z,NULL) +
+		       vr.boundary[id2](n,n2,v.z,NULL) -
 		       v.z[i,j]);
 #endif
 	    }
@@ -1313,23 +1315,23 @@ static bool diagonal_neighbor_3D (Point point,
 	      id2 = bid(neighbor(i,0,k)),
 	      id3 = bid(neighbor(0,j,k));
 	    for (scalar s in scalars)
-	      s[] = (s.boundary[id1](n0,n1,s) +
-		     s.boundary[id2](n0,n2,s) +
-		     s.boundary[id3](n0,n3,s) -
+	      s[] = (s.boundary[id1](n0,n1,s,NULL) +
+		     s.boundary[id2](n0,n2,s,NULL) +
+		     s.boundary[id3](n0,n3,s,NULL) -
 		     2.*s[i,j,k]);
 	    for (vector v in vectors) {
 	      scalar vt = VT, vn = VN, vr = VR;
-	      v.x[] = (vt.boundary[id1](n0,n1,v.x) +
-		       vt.boundary[id2](n0,n2,v.x) +
-		       vn.boundary[id3](n0,n3,v.x) -
+	      v.x[] = (vt.boundary[id1](n0,n1,v.x,NULL) +
+		       vt.boundary[id2](n0,n2,v.x,NULL) +
+		       vn.boundary[id3](n0,n3,v.x,NULL) -
 		       2.*v.x[i,j,k]);
-	      v.y[] = (vt.boundary[id1](n0,n1,v.y) +
-		       vn.boundary[id2](n0,n2,v.y) +
-		       vt.boundary[id3](n0,n3,v.y) -
+	      v.y[] = (vt.boundary[id1](n0,n1,v.y,NULL) +
+		       vn.boundary[id2](n0,n2,v.y,NULL) +
+		       vt.boundary[id3](n0,n3,v.y,NULL) -
 		       2.*v.y[i,j,k]);
-	      v.z[] = (vn.boundary[id1](n0,n1,v.z) +
-		       vr.boundary[id2](n0,n2,v.z) +
-		       vr.boundary[id3](n0,n3,v.z) -
+	      v.z[] = (vn.boundary[id1](n0,n1,v.z,NULL) +
+		       vr.boundary[id2](n0,n2,v.z,NULL) +
+		       vr.boundary[id3](n0,n3,v.z,NULL) -
 		       2.*v.z[i,j,k]);
 	    }
 	    return true;
@@ -1377,7 +1379,7 @@ static void box_boundary_level (const Boundary * b, scalar * list, int l)
 	else
 	  vectors = vectors_add (vectors, s.v);
       }
-      else if (s.v.x.i < 0)
+      else if (s.v.x.i < 0 && s.boundary[0])
 	scalars = list_add (scalars, s);
     }
   
@@ -1402,7 +1404,7 @@ static void box_boundary_level (const Boundary * b, scalar * list, int l)
 	    for (vector v in faces) {
 	      scalar vn = VN;
 	      if (vn.boundary[id])
-		v.x[(i + 1)/2] = vn.boundary[id](neighbor, point, v.x);
+		v.x[(i + 1)/2] = vn.boundary[id](neighbor, point, v.x, NULL);
 	    }
 	  }
 #if dimension > 1
@@ -1419,7 +1421,7 @@ static void box_boundary_level (const Boundary * b, scalar * list, int l)
 #else // dimension == 3
 		scalar vt = zn ? VT : VR;
 #endif
-		v.x[] = vt.boundary[id](neighbor, point, v.x);
+		v.x[] = vt.boundary[id](neighbor, point, v.x, NULL);
 	      }
 	    }
 	    else

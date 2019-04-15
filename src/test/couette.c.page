@@ -38,14 +38,15 @@ event init (t = 0) {
   foreach_vertex()
     phi[] = difference (sq(0.5) - sq(x) - sq(y),
 			sq(0.25) - sq(x) - sq(y));
+  boundary ({phi});
   fractions (phi, cs, fs);
 
   /**
   The outer cylinder is fixed and the inner cylinder is rotating with
   an angular velocity unity. */
   
-  u.n[embed] = dirichlet_embed (x*x + y*y > 0.14 ? 0. : - y);
-  u.t[embed] = dirichlet_embed (x*x + y*y > 0.14 ? 0. :   x);
+  u.n[embed] = dirichlet (x*x + y*y > 0.14 ? 0. : - y);
+  u.t[embed] = dirichlet (x*x + y*y > 0.14 ? 0. :   x);
 
   /**
   We initialize the reference velocity field. */

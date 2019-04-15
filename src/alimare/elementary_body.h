@@ -39,6 +39,8 @@ scale and the latent heat). */
 
 attribute {
   double D;
+  double rho;
+  double therm_conduct;
   double tr_eq;
   double peclet;
 }
@@ -64,13 +66,13 @@ The inputs of the function are:
 * $tr$: diffusive tracer field,
 * $\mathbf{v}_{pc}$: the phase change velocity. */
 
-void phase_change_velocity (scalar f, scalar tr, face vector v_pc) {
+void phase_change_velocity (scalar f, scalar tr, face vector v_pc, double latent_heat) {
 
   foreach()
     f[] = clamp(f[], 0., 1.);
   boundary ({f, tr});
   
-  /**
+ /**
   The phase change velocity $\mathbf{v}_{pc}$ is
 
   $$
@@ -246,17 +248,162 @@ mgstats dirichlet_diffusion (struct Dirichlet_Diffusion p) {
 }
 
 /**
-## Further improvements
+The level set function is known to have diffusion issues therefore it needs to be reinitialized frequently. This operation can be quite expensive.
 
-Reading the work of Leon Malan, we can list at least three possible improvements
-of what it is done here. Two of them are based on the idea to take advantage of
-our precise knowledge of the concentration value at the interface (saturation)
-and its position (thanks to the height function):
+*/
 
-* a better evaluation of concentration gradients at the interface,
-* choose another strategy to implemente the dirichlet condition at the interface,
-imposing a flux.
+void LS_reinit(scalar dist, double dt, double NB){
+  vector gr_LS[];
+  int i ;
+  double eps = 1.e-5;
+  scalar dist0[];
 
-The third one is to account for the Stefan flow and the recoil pressure by
-adding a term in the projection step of the resolution of the Navier-Stokes
-equation. */
+  foreach(){
+    dist0[] = dist[] ;
+  }
+  for (i = 1; i<=100 ; i++){
+    double res=-100.;
+    foreach(reduction(max:res)){
+      double delt;
+      if(fabs(dist[])<NB/5.){
+        delt  = 0.;
+        foreach_dimension(){
+          if(dist[]>0){
+            gr_LS.x[]   = max(max(0., (dist[]    - dist[-1,0])/Delta),
+                              min(0., (dist[1,0] - dist[])    /Delta)) -1.;
+          }
+          else
+          {
+            gr_LS.x[]   = max(min(0., (dist[]    - dist[-1,0])/Delta),
+                              max(0., (dist[1,0] - dist[])    /Delta)) -1.; 
+          } 
+          delt += gr_LS.x[]*0.5*dt*dist0[]/sqrt(dist0[]*dist0[] + Delta*Delta);
+        }
+        dist[] -= delt;
+        
+        if(delt>=res) res = delt;
+      }
+    }
+    boundary({dist});
+    if(fabs(res)<eps){
+      // printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
+      break;
+    } 
+  }
+}
+
+// // sign function
+
+double sign2 (double x)
+{
+  return(x > 0. ? 1. : x<0 ? -1. : 0.);
+}
+/**
+V2 of the reinit function with subcell correction.
+Based on the work of Russo2000.
+phi^n+1 = phi^n - Delta t S(phi) G(phi) far from the interface
+Near the interface it is modified to :
+phi^n+1 = phi^n - Delta t/Delta x ( sgn(phi^0) |phi^n| - Di)
+
+with:
+Di = Delta x * phi_i^0/Delta phi_0^i
+
+with:  
+Delta phi_0^i = max((phi^0_{i-1}-phi^0_{i+1})/2,phi^0_{i-1}-phi^0_{i},
+phi^0_{i}-phi^0_{i+1})
+*/
+
+
+void LS_reinit2(scalar dist, double dt, double NB){
+  vector gr_LS[];
+  int i, it_max=1000 ;
+  double eps = dt/20., eps2 = eps/2.;
+  scalar dist0[], dist_eps[];
+  double xCFL = 0.8;
+// 1) we make a copy of dist before iterating on it
+// 2) we determine xCFL according to the local size
+  foreach(reduction(min:xCFL)){
+    dist0[] = dist[] ;
+    if(fabs(dist[])<NB/5.){
+      //min_neighb : variable for detection if cell is near
+      //             the zero of the level set function
+
+      double min_neighb = 1.;
+      foreach_dimension(){
+        min_neighb = min (min_neighb, dist[-1,0]*dist[]); 
+        min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
+      }
+
+      if(min_neighb < 0.){
+        double dist1= 0., dist2= 0.,dist3= 0.;
+        foreach_dimension(){
+          dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
+          dist2 += powf((dist0[1,0]-dist0[    ]),2.);
+          dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+        }
+        double Dij = Delta*dist0[]/
+                max(eps2,sqrt(max(dist1,max(dist2,dist3))));
+// stability condition near the interface is modified
+        xCFL = min(xCFL,fabs(Dij)/(Delta));
+      }
+    }
+  }
+  for (i = 1; i<=it_max ; i++){
+    double res=0.;
+    foreach(){
+      dist_eps[] = dist[] ;
+    }
+    boundary({dist_eps});
+    
+    foreach(reduction(max:res)){
+      double delt =0.;
+      if(fabs(dist_eps[])<NB/5.){
+        //min_neighb : variable for detection if cell is near
+        //             the zero of the level set function
+
+        double min_neighb = 1.;
+        foreach_dimension(){
+          min_neighb = min (min_neighb, dist_eps[-1,0]*dist_eps[]);
+          min_neighb = min (min_neighb, dist_eps[ 1,0]*dist_eps[]);
+        }
+
+        if(min_neighb < 0.){
+          double dist1= 0., dist2= 0.,dist3= 0.;
+          foreach_dimension(){
+            dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
+            dist2 += powf((dist0[1,0]-dist0[    ]),2.);
+            dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+          }
+          double Dij = Delta*dist0[]/
+                  max(eps2,sqrt(max(dist1,max(dist2,dist3))));
+          delt = (sign2(dist0[])*fabs(dist_eps[])-Dij)/Delta;
+        }
+        else 
+          if(dist0[]>0){
+          foreach_dimension(){
+            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
+            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
+            delt   += max(max(0.,powf(a,2.)),min(0., powf(b,2.)));
+          }
+          delt = sign2(dist0[])*(sqrt(delt) - 1.);
+        }
+        else{
+          foreach_dimension(){
+            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
+            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
+            delt   += max(min(0.,powf(a,2.)),max(0., powf(b,2.)));
+           }
+           delt = sign2(dist0[])*(sqrt(delt) - 1.);
+        }
+        dist[] -= xCFL*dt*delt;
+        if(fabs(delt)>=res) res = fabs(delt);
+      }
+    }
+    boundary({dist});
+    if(res<eps){
+      printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
+      break;
+    }
+    if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
+  }
+}

@@ -1,4 +1,4 @@
-pristine:78bb090930df939cc14a1185c8171e3435dc1e3159070ecc11473b8d0813252e
+pristine:0912c7f64a519748e31b4817860cdd69e6cc35026921a143c73d71584e62e823
 Starting with inventory:
 0000003163-75c76620a7c163316eabaca7c260dc7a3e43203e71f3d7dfc515cef3b9485265
 [TAG release 18-12-21
@@ -37,3 +37,92 @@ ne ~/.darcs/author**20190314140234
  with modification for the Gibbs Thomson effect
 ] 
 hash: 0000040664-8ffd5bf567beec2ebc974630fcddbf881d4d44c16bc29803a59707f7ff8afbc8
+[output_cells() now takes various options.
+Stephane Popinet <popinet@basilisk.fr>**20190224170828
+ Ignore-this: 199a771088dba705fda33bf7d376cd4a
+] 
+hash: 0000002082-507af3d6315fb2ebc2dbc156357829dfdabe115d02c37f7096d03364ad3bed3d
+[qcc avoids pedantic empty structure warning
+Stephane Popinet <popinet@basilisk.fr>**20190305135549
+ Ignore-this: 860f5f33e282c606c25c85a8d4d4af69
+] 
+hash: 0000000814-c790060b4ed9e814001622ea896c1f00fc3bcb2707c813989dc8cfe02a047832
+[dumps are "buffered" by default. To turn this off use "unbuffered = true"
+Stephane Popinet <popinet@basilisk.fr>**20190308151424
+ Ignore-this: 40267e87f8910fc641e5d5307f6cee03
+] 
+hash: 0000000621-8fb3c0c432d40ad19dc813aa629e5159e9f2e16a762632a4c885c212bb0eb2c1
+[MPI dump() checks whether file seeking is really necessary
+Stephane Popinet <popinet@basilisk.fr>**20190315073921
+ Ignore-this: 90209431418148d4a8131c961cf656ce
+ 
+ The system fseek() seems to be too stupid to do this which may lead to
+ very large performance penalties, depending on the filesystem used.
+] 
+hash: 0000000583-0125ee709eea37e7e3ba0d8a3853e099e3249c8c9fb638a2a4065a9c76696e41
+[Performance and profiling plots should not be interactive
+Stephane Popinet <popinet@basilisk.fr>**20190322080915
+ Ignore-this: 3ab4974c34c86e2706a77cc21a1ddd17
+] 
+hash: 0000004733-9ffa07de729ececaa3c13497b8dbc5db5b7bd47d8a0eea55113179b05b6ecd34
+[Boundary conditions should also be applied to vertex scalars
+Stephane Popinet <popinet@basilisk.fr>**20190322082308
+ Ignore-this: d202941a4bb7ab97cbb9eb652ddedbd1
+] 
+hash: 0000311548-9c5b739820f68e9503da843840d285e3dc59625e22c26d0b18d8efd633c92d58
+[Embedded boundaries in 3D
+Stephane Popinet <popinet@basilisk.fr>**20190322094752
+ Ignore-this: 72973cb52b2ecdcffb4ebc75da65b924
+ 
+ Note that the syntax has changed slightly: dirichlet_embed() must be
+ replaced with dirichlet().
+] 
+hash: 0000539290-f1686c130fb44229d20de4ce9906f6a1b23ea873c681bcdb4c73f55c18483503
+[Okada doc and update
+Emily.Lane@niwa.co.nz**20180511025938
+ Ignore-this: e68d939790337ae2a36712b57c68913c
+ Documentation added to Okada re conventions. Also fault_centroid accepts depth at centroid.
+] 
+hash: 0000003106-21cea8908ff6eccb2676080a68dc1e9473dd6b142fea300f6593c8c2be0cad1b
+[distance() should now work also on multigrid
+Stephane Popinet <popinet@basilisk.fr>**20190322095237
+ Ignore-this: b9c83995af88372f3047e3e50e05d783
+] 
+hash: 0000000277-e82393f4cd52013901eb9bc6ef3a8c4d9f6c6b7694c406f094b89bc04c1a7006
+[Contact angles in 2D need to take orientation into account
+Stephane Popinet <popinet@basilisk.fr>**20190322095425
+ Ignore-this: f6edc104d73a97b035d925e73d1ead0d
+ 
+ Thanks to Quentin Magdelaine for pointing this out.
+] 
+hash: 0000000402-bc5f569394db70138f026ef841adf9f965c805f1bd8a3a9f9a953d096a4539f5
+[Default sea level option for elevation.h
+Stephane Popinet <popinet@basilisk.fr>**20190322095817
+ Ignore-this: b0ec67fe0102c679c12265ed61d08210
+] 
+hash: 0000000481-b1d78b3b1524b457df4ba9d15f6205a81342dacc154466ea552e158fb52bd1a2
+[output_gauges() now also output data in dry cells.
+Stephane Popinet <popinet@basilisk.fr>**20190322100401
+ Ignore-this: e6c30f5d6bafd0fa0f70d57c3c5e4f50
+] 
+hash: 0000000867-1506953c77d98a11fdcd9d78c9a04b7e9d19c6eaff7a289d9c9d15e90ac2551e
+[New "edges" option for isosurfaces.
+Stephane Popinet <popinet@basilisk.fr>**20190322100626
+ Ignore-this: 854ab52d1350ed1d2d5f31878a62ec9e
+] 
+hash: 0000001019-ccc1bd74bc5df19eeccef4bac96f38021f7d45186fb637e32d5a1cdece3beea4
+[Improved documentation for Okada's fault model.
+Stephane Popinet <popinet@basilisk.fr>**20190322102725
+ Ignore-this: 63dfb7edcb14b60cae3ea9eb2ca548cd
+] 
+hash: 0000004912-7fec991a27b08b3dfb4dbd9b2ca66c92eb75fdad5cdb757f07ab57b587b14b72
+[TAG release 19-3-23
+Stephane Popinet <popinet@basilisk.fr>**20190323161754
+ Ignore-this: 6e136dfac5a82fd0cba7077c1a31e92a
+] 
+hash: 0000003521-66cab7114055e6e24b285c2ecf0143f7886c8c56eec32d01c4c673fd9aba6ef6
+[sinus development and tests
+limarealexandre@gmail.com**20190325094753
+ Ignore-this: 4e5d58ddebcaa5dbbb86a3b3900e4f97
+] 
+hash: 0000007483-572a780ac87b907c47602f034a9056f47c7a58367b0215f632dd996d13cba92e

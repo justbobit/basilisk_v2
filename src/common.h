@@ -924,9 +924,9 @@ int nboundary = 2*dimension;
 
 #define none -1
 
-@define dirichlet(x)            (2.*(x) - val(_s,0,0,0))
+@define dirichlet(expr)         (2.*(expr) - val(_s,0,0,0))
 @define dirichlet_homogeneous() (- val(_s,0,0,0))
-@define neumann(x)              (Delta*(x) + val(_s,0,0,0))
+@define neumann(expr)           (Delta*(expr) + val(_s,0,0,0))
 @define neumann_homogeneous()   (val(_s,0,0,0))
 
 double  * _constant = NULL;
@@ -940,8 +940,8 @@ typedef struct _Point Point;
 @include "_attributes.h"
 
 attribute {
-  double (** boundary)             (Point, Point, scalar);
-  double (** boundary_homogeneous) (Point, Point, scalar);
+  double (** boundary)             (Point, Point, scalar, void *);
+  double (** boundary_homogeneous) (Point, Point, scalar, void *);
   double (* gradient)              (double, double, double);
   void   (* delete)                (scalar);
   char * name;
@@ -1107,10 +1107,11 @@ scalar * all = NULL; // all the fields
 
 // basic methods
 
-scalar (* init_scalar)      (scalar, const char *);
-vector (* init_vector)      (vector, const char *);
-tensor (* init_tensor)      (tensor, const char *);
-vector (* init_face_vector) (vector, const char *);
+scalar (* init_scalar)        (scalar, const char *);
+scalar (* init_vertex_scalar) (scalar, const char *);
+vector (* init_vector)        (vector, const char *);
+tensor (* init_tensor)        (tensor, const char *);
+vector (* init_face_vector)   (vector, const char *);
 
 #define vector(x) (*((vector *)&(x)))
 
