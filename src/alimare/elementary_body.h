@@ -322,9 +322,11 @@ void LS_reinit2(scalar dist, double dt, double NB){
   double xCFL = 0.8;
 // 1) we make a copy of dist before iterating on it
 // 2) we determine xCFL according to the local size
-  foreach(reduction(min:xCFL)){
+  int sum = 0;
+  foreach(reduction(min:xCFL) reduction(+:sum)){
     dist0[] = dist[] ;
-    if(fabs(dist[])<NB/5.){
+    if(fabs(dist[])<NB){
+      sum ++;
       //min_neighb : variable for detection if cell is near
       //             the zero of the level set function
 
@@ -357,7 +359,7 @@ void LS_reinit2(scalar dist, double dt, double NB){
     
     foreach(reduction(max:res)){
       double delt =0.;
-      if(fabs(dist_eps[])<NB/5.){
+      if(fabs(dist_eps[])<NB){
         //min_neighb : variable for detection if cell is near
         //             the zero of the level set function
 
@@ -401,9 +403,9 @@ void LS_reinit2(scalar dist, double dt, double NB){
     }
     boundary({dist});
     if(res<eps){
-      printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
+      fprintf(stderr,"%d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
       break;
     }
-    if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
+    if(i==it_max)fprintf(stderr,"NOT CONVERGED %d %6.2e %6.2e \n", sum, res,eps);
   }
 }
