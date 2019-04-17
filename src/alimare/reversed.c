@@ -121,8 +121,10 @@ within machine precision and the volume fraction should be bounded by
 zero and one. */
 
 event logfile (t = {0,T}) {
-  stats s = statsf (dist);
+  stats s = statsf (f);
   fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s.sum, s.min, s.max);
+  stats s2 = statsf (dist);
+  fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s2.sum, s2.min, s2.max);
 }
 
 
@@ -133,12 +135,18 @@ final shape. We output the norms as functions of the maximum
 resolution `N`. */
 
 event field (t = T) {
-  scalar e[];
+  scalar e[], e2[];
   fraction (e, circle(x,y));
-  foreach()
-    e[] -= f[];
-  norm n = normf (e);
-  fprintf (stderr, "%d %g %g %g\n", N, n.avg, n.rms, n.max);
+  foreach_vertex()
+    e2[] = circle(x,y);
+  foreach(){
+    e[]  -= f[];
+    e2[] -= dist[];
+  }
+  norm n  = normf (e);
+  norm n2 = normf (e2);
+  fprintf (stderr, "%d %g %g %g %g %g %g\n", N, n.avg, n.rms, n.max, 
+            n2.avg, n2.rms, n2.max);
 }
 
 /**
