@@ -180,6 +180,20 @@ event levels (t = T/2) {
      max=0.1*NB_width);
   }
 }
+
+event levels2 (t = T) {
+  if (N == 128) {
+    scalar l[];
+    foreach()
+      l[] = f[];
+    output_ppm (l, file = "f_reversed2.png", n = 400, min = 0, max = 1);
+
+    foreach()
+      l[] = dist[];
+    output_ppm (l, file = "dist2.png", n = 400, min = -0.1*NB_width,
+     max=0.1*NB_width);
+  }
+}
 #endif
 
 event LS_reinitialization(i+=400,last){
