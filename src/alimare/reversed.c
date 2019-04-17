@@ -184,8 +184,8 @@ event levels (t = T/2) {
 
 event LS_reinitialization(i+=400,last){
   if(i>15){
-    NB_width = L0/(1 << (MAXLEVEL-2));// NarrowBand_width for level_set
-    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
+    NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width);
   }
 }
 
