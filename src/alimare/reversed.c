@@ -153,10 +153,10 @@ event field (t = T) {
 We also output the shape of the reconstructed interface at regular
 intervals (but only on the finest grid considered). */
 
-event shape (t += T/4.) {
-  if (N == 128)
-    output_facets (f);
-}
+// event shape (t += T/4.) {
+//   if (N == 128)
+//     output_facets (f);
+// }
 
 /**
 If we are using adaptivity, we also output the levels of refinement at
