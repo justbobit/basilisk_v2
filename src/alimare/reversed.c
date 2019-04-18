@@ -9,11 +9,12 @@ errors accumulated during advection.
 
 We will need the advection solver combined with the VOF advection
 scheme. */
+#include "grid/cartesian.h"
 
 #include "advection.h"
 #include "vof.h"
 #include "alimare/level_set.h"
-#include "alimare/elementary_body.h"
+// #include "alimare/elementary_body.h"
 
 double NB_width;
 
@@ -24,8 +25,8 @@ an *interface* for the VOF solver. We do not advect any tracer with
 the default (diffusive) advection scheme of the advection solver. */
 
 scalar f[], dist[];
-scalar * interfaces = {f}, * tracers = NULL;
-scalar * level_set = {dist};
+scalar * interfaces = {f}, * tracers = {dist};
+scalar * level_set = NULL;
 
 int MAXLEVEL;
 
@@ -40,6 +41,7 @@ int main() {
   We then run the simulation for different levels of refinement. */
 
   for (MAXLEVEL = 5; MAXLEVEL <= 7; MAXLEVEL++) {
+    NB_width = L0/(1 << (MAXLEVEL-3));
     init_grid (1 << MAXLEVEL);
     run();
   }
@@ -61,20 +63,36 @@ We define the levelset function $\phi$ on each vertex of the grid and
 compute the corresponding volume fraction field. */
 
 event init (i = 0) {
-    vertex scalar LS_vert[];
+    // vertex scalar LS_vert[];
 
   fraction (f, circle(x,y));
   foreach_vertex(){
-    LS_vert[] = circle(x,y);
+    dist[] = clamp(circle(x,y), -NB_width, NB_width);
   }
-  boundary({LS_vert});
-  foreach() {
-    double delta1 = LS_vert[1,0] - LS_vert[];
-    double delta2 = LS_vert[0,1] - LS_vert[];
-    double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
+  boundary({dist});
+  // foreach() {
+  //   // double delta1 = LS_vert[1,0] - LS_vert[];
+  //   // double delta2 = LS_vert[0,1] - LS_vert[];
+  //   // double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
 
-    //dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
-    dist[] = LS_vert[];
+  //   //dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
+  //   dist[] = LS_vert[];
+  // }
+
+  if (N == 128) {
+    scalar l[];
+    // foreach()
+    //   l[] = level;
+    // output_ppm (l, file = "levels_init.png", n = 400, min = 0, max = 7);
+
+    foreach()
+      l[] = f[];
+    output_ppm (l, file = "f_reversed_init.png", n = 400, min = 0, max = 1);
+
+    foreach()
+      l[] = dist[];
+    output_ppm (l, file = "dist_init.png", n = 400, min = -NB_width,
+     max=NB_width);
   }
 
 
@@ -91,7 +109,7 @@ event velocity (i++) {
   `f`. */
 
 #if TREE
-  adapt_wavelet ({f,dist}, (double[]){5e-3, 5e-3}, MAXLEVEL, list = {f,dist});
+  adapt_wavelet ({f,dist}, (double[]){1.e-3, 1.e-3*NB_width}, MAXLEVEL, list = {f,dist});
 #endif
 
   /**
@@ -141,7 +159,7 @@ event field (t = T) {
     e2[] = circle(x,y);
   foreach(){
     e[]  -= f[];
-    e2[] -= dist[];
+    e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];
   }
   norm n  = normf (e);
   norm n2 = normf (e2);
@@ -162,13 +180,13 @@ intervals (but only on the finest grid considered). */
 If we are using adaptivity, we also output the levels of refinement at
 maximum stretching. */
 
-#if TREE
+// #if TREE
 event levels (t = T/2) {
   if (N == 128) {
     scalar l[];
-    foreach()
-      l[] = level;
-    output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
+    // foreach()
+    //   l[] = level;
+    // output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
 
     foreach()
       l[] = f[];
@@ -176,30 +194,40 @@ event levels (t = T/2) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist.png", n = 400, min = -0.1*NB_width,
-     max=0.1*NB_width);
+    output_ppm (l, file = "dist.png", n = 400, min = NB_width,
+     max=NB_width);
   }
 }
 
-event levels2 (t = T) {
-  if (N == 128) {
+event levels2 (t += T/120) 
+{  if (N == 128) {
     scalar l[];
+    // foreach()
+    //   l[] = level;
+    // output_ppm (l, file = "levels2.gif", n = 400, min = 0, max = 7);
+
     foreach()
       l[] = f[];
-    output_ppm (l, file = "f_reversed2.png", n = 400, min = 0, max = 1);
+    output_ppm (l, file = "f_reversed2.gif", n = 400, 
+      opt = "--delay 1",min = 0, max = 1);
+
+    foreach()
+      l[] = fabs(dist[]) < NB_width ? 1. : 0.;
+    output_ppm (l, file = "NB.gif", n = 400, 
+      opt = "--delay 1",min = 0, max = 1);
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist2.png", n = 400, min = -0.1*NB_width,
-     max=0.1*NB_width);
+    output_ppm (l, file = "dist2.gif", n = 400, 
+      opt = "--delay 1",min = -NB_width, max=NB_width);
   }
 }
-#endif
+// #endif
 
 event LS_reinitialization(i+=400,last){
   if(i>15){
-    NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
-    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width);
+//     NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
   }
 }
 

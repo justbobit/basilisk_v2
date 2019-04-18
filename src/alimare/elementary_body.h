@@ -316,7 +316,7 @@ phi^0_{i}-phi^0_{i+1})
 
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
-  int i, it_max=10000 ;
+  int i, it_max=1000 ;
   double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
 
