@@ -194,7 +194,7 @@ event levels (t = T/2) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist.png", n = 400, min = NB_width,
+    output_ppm (l, file = "dist.png", n = 400, min = -NB_width,
      max=NB_width);
   }
 }
