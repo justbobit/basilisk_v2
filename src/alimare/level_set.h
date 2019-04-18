@@ -56,7 +56,7 @@ phi^0_{i}-phi^0_{i+1})
 
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
-  int i, it_max=1000 ;
+  int i, it_max=100 ;
   double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
 
@@ -143,6 +143,8 @@ void LS_reinit2(scalar dist, double dt, double NB){
       }
     }
     boundary({dist});
+	if(i%10 == 0 & i<it_max) fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
+
     if(res<eps){
       fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
       break;
