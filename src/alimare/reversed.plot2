@@ -23,7 +23,7 @@ set xtics 16,2,256
 set grid ytics
 set cbrange [1:1]
 
-plot 'log' u 1:4 t 'VOF max (adaptive)', exp(f(log(x))) t ftitle(a,b), \
-     'log' u 1:2 t 'VOF norm1 (adaptive)', exp(f2(log(x))) t ftitle(a2,b2), \
-     'log' u 1:7 t 'LS max (adaptive)', exp(f3(log(x))) t ftitle(a3,b3), \
-     'log' u 1:5 t 'LS norm1 (adaptive)', exp(f4(log(x))) t ftitle(a4,b4)
+plot 'log' u 1:4 t 'VOF max (cart)'  , exp(f(log(x)))       t ftitle(a ,b ), \
+     'log' u 1:2 t 'VOF norm1 (cart)', exp(f2(log(x))) lw 3 t ftitle(a2,b2), \
+     'log' u 1:7 t 'LS max (cart)'   , exp(f3(log(x)))      t ftitle(a3,b3), \
+     'log' u 1:5 t 'LS norm1 (cart)' , exp(f4(log(x))) lw 3 t ftitle(a4,b4)
