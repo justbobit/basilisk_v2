@@ -18,6 +18,7 @@ extern double dt;
 /**
 The integration is performed using the Bell-Collela-Glaz scheme. */
 #include "bcg.h"
+#include "alimare/alex_functions.h"
 event LS_advection (i++,last) {
   // printf("%d \n", i);
   advection (level_set, uf, dt);
@@ -27,6 +28,8 @@ Reinitialization method can be chosen by overloading this function */
 event LS_reinitialization(i++,last) {
 }
 /**
+# LS_reinit function  
+
 V2 of the reinit function with subcell correction.
 Based on the work of Russo2000.
 phi^n+1 = phi^n - Delta t S(phi) G(phi) far from the interface
@@ -37,14 +40,11 @@ with:
 Di = Delta x * phi_i^0/Delta phi_0^i
 
 with:  
-Delta phi_0^i = max((phi^0_{i-1}-phi^0_{i+1})/2,phi^0_{i-1}-phi^0_{i},
-phi^0_{i}-phi^0_{i+1})
-*/
+$$Delta phi_0^i = max((phi^0_{i-1}-phi^0_{i+1})/2,phi^0_{i-1}-phi^0_{i},
+phi^0_{i}-phi^0_{i+1})$$  
+  
 
-/**  
-#Reinit function definition.
-
-Based on the work of Russo
+Based on the work of Russo (2000)
  */
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
@@ -135,7 +135,8 @@ void LS_reinit2(scalar dist, double dt, double NB){
       }
     }
     boundary({dist});
-	if((i%10 == 0) & (i<it_max)) fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e
+  if((i%10 == 0) & (i<it_max)) 
+    fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e \
     %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
 
     if(res<eps){
