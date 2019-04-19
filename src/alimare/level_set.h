@@ -26,11 +26,6 @@ event LS_advection (i++,last) {
 Reinitialization method can be chosen by overloading this function */
 event LS_reinitialization(i++,last) {
 }
-// // sign function
-double sign2 (double x)
-{
-  return(x > 0. ? 1. : x<0 ? -1. : 0.);
-}
 /**
 V2 of the reinit function with subcell correction.
 Based on the work of Russo2000.
