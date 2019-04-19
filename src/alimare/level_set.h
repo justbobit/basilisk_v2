@@ -10,7 +10,6 @@ where $\mathbf{u_f}$ is the velocity field and $LS$ is the level set function.
 The level set function is defined and initialized elsewhere (typically by the 
 user), the face vector field `uf` and the timestep `dt` are defined by a
 solver. */
-
 extern scalar * level_set;
 extern face vector uf;
 extern double dt;
@@ -18,22 +17,16 @@ extern double dt;
 
 /**
 The integration is performed using the Bell-Collela-Glaz scheme. */
-
 #include "bcg.h"
-
 event LS_advection (i++,last) {
   // printf("%d \n", i);
   advection (level_set, uf, dt);
 }
 /**
 Reinitialization method can be chosen by overloading this function */
-
 event LS_reinitialization(i++,last) {
 }
-
-
 // // sign function
-
 double sign2 (double x)
 {
   return(x > 0. ? 1. : x<0 ? -1. : 0.);
@@ -53,7 +46,11 @@ Delta phi_0^i = max((phi^0_{i-1}-phi^0_{i+1})/2,phi^0_{i-1}-phi^0_{i},
 phi^0_{i}-phi^0_{i+1})
 */
 
+/**  
+#Reinit function definition.
 
+Based on the work of Russo
+ */
 void LS_reinit2(scalar dist, double dt, double NB){
   vector gr_LS[];
   int i, it_max=100 ;
@@ -143,12 +140,15 @@ void LS_reinit2(scalar dist, double dt, double NB){
       }
     }
     boundary({dist});
-	if(i%10 == 0 & i<it_max) fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
+	if((i%10 == 0) & (i<it_max)) fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e
+    %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
 
     if(res<eps){
-      fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
+      fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,
+        eps, xCFL,dt, NB);
       break;
     }
-    if(i==it_max)fprintf(stderr,"# REINIT NOT CONVERGED %d %6.2e %6.2e \n", sum, res,eps);
+    if(i==it_max)fprintf(stderr,"# REINIT NOT CONVERGED %d %6.2e %6.2e \n", sum,
+      res,eps);
   }
 }
