@@ -67,7 +67,7 @@ event init (i = 0) {
 
   fraction (f, circle(x,y));
   foreach_vertex(){
-    dist[] = clamp(circle(x,y), -NB_width, NB_width);
+    dist[] = clamp(circle(x,y), -1.1*NB_width, 1.1*NB_width);
   }
   boundary({dist});
   // foreach() {
