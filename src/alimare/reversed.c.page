@@ -1,5 +1,5 @@
 /**
-# Time-reversed VOF advection in a vortex
+# Time-reversed VOF and Level_set advection in a vortex
 
 This classical test advects and stretches an initially circular
 interface in a non-divergent vortical flow. The flow reverts in time
@@ -8,24 +8,54 @@ difference between the initial and final shapes is a measure of the
 errors accumulated during advection.
 
 We will need the advection solver combined with the VOF advection
-scheme. */
+scheme and the reinitialization function of the LS function. */
 #include "grid/cartesian.h"
 
 #include "advection.h"
 #include "vof.h"
 #include "alimare/level_set.h"
-// #include "alimare/elementary_body.h"
-
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
-an *interface* for the VOF solver. We do not advect any tracer with
-the default (diffusive) advection scheme of the advection solver. */
+an *interface* for the VOF solver. The level set function is a *tracer* `dist`.
+
+
+We do not advect any *level set* with
+the default (diffusive) advection scheme of the advection solver.  
+ */
 
 scalar f[], dist[];
 scalar * interfaces = {f}, * tracers = {dist};
 scalar * level_set = NULL;
+/**
+Here are the parameters for the simulation. We use a narrow band (NB) approach 
+meaning that the level set function has meaning only in the direct vicinity of 
+the 0 value of the level set function. For this test case, the NB is made of only 4 cells. 
+ */
 
+int     MAXLEVEL;
+int     nb_cell_NB =  1 << 2 ;  // number of cells for the NB
+double  NB_width ;              // length of the NB
+
+int     N_display = 7;          // maximum level of refinement for which we 
+                                // will display the results
+
+/**
+We center the unit box on the origin and set a maximum timestep of 0.1 */
+
+int main() {
+  origin (-0.5, -0.5);
+  DT = .1;
+  
+  /**
+  We then run the simulation for different levels of refinement. */
+
+  for (MAXLEVEL = 5; MAXLEVEL <= N_display; MAXLEVEL++) {
+    NB_width = L0*nb_cell_NB / (1<<MAXLEVEL);
+    init_grid (1 << MAXLEVEL);
+    run();
+  }
+}
 
 /**
 The initial interface is a circle of radius 0.2 centered on
@@ -35,55 +65,23 @@ function `circle()` to define this interface.
 The period of the stretching cycle is set to 15, which will lead to
 strong stretching. Milder conditions can be obtained by decreasing it. */
 
-int     MAXLEVEL;
-int     NB_cell_narrow =  1 << 2 ;
-double  NB_width ;
-int     N_display = 8;
-#define circle(x,y) (sq(0.1) - (sq(x + 0.2) + sq(y + .236338)))
+#define circle(x,y) (sq(0.2) - (sq(x + 0.2) + sq(y + .236338)))
 #define T 15.
 
 /**
-We center the unit box on the origin and set a maximum timestep of 0.1 */
+We define the auxiliary levelset function $\phi$ on each vertex of the grid and
+compute the corresponding volume fraction field. 
 
-int main() {
-  origin (-0.5, -0.5);
-  DT = T/1280;
-  
-  /**
-  We then run the simulation for different levels of refinement. */
-
-  for (MAXLEVEL = 5; MAXLEVEL <= N_display; MAXLEVEL++) {
-    NB_width = L0*NB_cell_narrow / (1<<MAXLEVEL);
-    init_grid (1 << MAXLEVEL);
-    run();
-  }
-}
-
-
-/**
-We define the levelset function $\phi$ on each vertex of the grid and
-compute the corresponding volume fraction field. */
+The level set function `dist` is taken positive out of the circle and we 
+clamp the distance due to our NB approach. We take a 2\% overshoot that prevents
+ NB cells from appearing due to spurious oscillations.
+*/
 
 event init (i = 0) {
-  vertex scalar LS_vert[];
-
   fraction (f, circle(x,y));
   foreach_vertex(){
-    // dist[] = -clamp(circle(x,y), -1.02*NB_width, 
-    //                 1.02*NB_width);
-    dist[] = -circle(x,y); 
-    // LS_vert[] = -circle(x,y);
+    dist[] = -clamp(circle(x,y), -1.02*NB_width, 1.02*NB_width);
   }
-  // foreach() {
-    // double delta1 = LS_vert[1,0] - LS_vert[];
-    // double delta2 = LS_vert[0,1] - LS_vert[];
-    // double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
-
-    // dist[] = clamp(1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[],
-  //   dist[] = clamp(LS_vert[]+Delta/2.,
-  //                   -1.1*NB_width, 1.1*NB_width);
-  // }
-
 
   if (N == N_display) {
     scalar l[];
@@ -111,11 +109,12 @@ event velocity (i++) {
   
   On trees we first adapt the grid so that the estimated error on
   the volume fraction is smaller than $5\times 10^{-3}$. We limit the
-  resolution at `MAXLEVEL` and we only refine the volume fraction field
-  `f`. */
+  resolution at `MAXLEVEL` and we refine the volume fraction field
+  `f` and on the level set function `dist` with a threshold of $1 \times 10 ^{-3}NB_{width}$. */
 
 #if TREE
-  adapt_wavelet ({f,dist}, (double[]){1.e-3, 1.e-3*NB_width}, MAXLEVEL, list = {f,dist});
+  adapt_wavelet ({f,dist}, (double[]){1.e-3, 1.e-3*NB_width}, MAXLEVEL, 
+    list= {f,dist});
 #endif
 
   /**
@@ -146,17 +145,18 @@ zero and one. */
 
 event logfile (t = {0,T}) {
   stats s = statsf (f);
-  fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s.sum, s.min, s.max);
-  stats s2 = statsf (dist);
-  fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s2.sum, s2.min, s2.max);
+  fprintf (stderr, "# %f %.12f %.9f %g\n", t, s.sum, s.min, s.max);
 }
 
 
 /**
-To compute the error, we reinitialise field `e` at the end of the
-simulation with the initial shape and compute the difference with the
+To compute the errors, we reinitialise field `e` and `e2` at the end of the
+simulation with the initial shape and compute the differences with the
 final shape. We output the norms as functions of the maximum
-resolution `N`. */
+resolution `N`.  
+
+Note that the error of the level set function is only studied in half of the NB width.
+*/
 
 event field (t = T) {
   scalar e[], e2[];
@@ -165,7 +165,7 @@ event field (t = T) {
     e2[] = -circle(x,y);
   foreach(){
     e[]  -= f[];
-    e2[] -= fabs(dist[])< 0.25*NB_width ? dist[] : e2[];
+    e2[] -= fabs(dist[])< 0.5*NB_width ? dist[] : e2[];
   }
   norm n  = normf (e);
   norm n2 = normf (e2);
@@ -189,6 +189,14 @@ maximum stretching. */
 #if TREE
 event levels (t = T/2) {
   if (N == N_display) {
+    scalar l[];
+    foreach()
+      l[] = level;
+    output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
+  }
+}
+#endif
+
 
 event levels (t = T/2) {
   if (N == N_display) {
@@ -207,14 +215,15 @@ event levels (t = T/2) {
      max=0.05*NB_width);
   }
 }
-
+/**
+We make simple movies showing the field `f`, the cells used for the NB and the
+level set function during the simulation.
+*/
 
 event levels2 (t += T/300) 
 {  if (N == N_display) {
     scalar l[];
-    // foreach()
-    //   l[] = level;
-    // output_ppm (l, file = "levels2.gif", n = 400, min = 0, max = 7);
+
 
     foreach()
       l[] = f[];
@@ -229,15 +238,20 @@ event levels2 (t += T/300)
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -0.05*NB_width, max=0.05*NB_width);
+      opt = "--delay 1",min = -0.25*NB_width, max=0.25*NB_width);
   }
 }
-// #endif
+
+/**
+Level set reinitialization event. The number of iteration of the LS_reinit2 
+function is set to  $1.4 \times 2 \times nb_{cell NB}$ which is a bit more than 
+the $NB_{width}$
+*/
 
 event LS_reinitialization(i++,last){
   if(i>15){
     LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
-      NB_cell_narrow << 1);
+      1.4*(nb_cell_NB << 1));
   }
 }
 
@@ -263,7 +277,7 @@ are comparable.
 
 The shapes of the interface at $t=0$, $t=T/4$, $t=T/2$, $t=3T/4$ and
 $t=T$ are displayed below for both sets of simulations (constant and
-adaptive), for $N=128$. The shapes for $t=T/4$ should be identical to
+adaptive), for $N=N_{display}$. The shapes for $t=T/4$ should be identical to
 those for $t=3T/4$ and similarly for $t=0$ and $t=T$ (for which we
 measure the error). Note that the errors for $t=3T/4$ seem to be much
 larger than those for $t=T$.
@@ -271,4 +285,4 @@ larger than those for $t=T$.
 ![Shapes of the interface for $t=0$, $t=T/4$, $t=T/2$, $t=3T/4$ and
 $t=T$ for two sets of simulations.](reversed/interface.png) 
 
-![Refinement levels for $t=T/2$ and $N=128$.](reversed/levels.png) */
+![Refinement levels for $t=T/2$ and $N=N_{display}$.](reversed/levels.png) */
