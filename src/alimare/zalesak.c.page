@@ -215,6 +215,50 @@ event levels (t = {0,T}) {
       l[] = dist[];
     output_ppm (l, file = "dist.png", n = 400, min = -NB_width,
      max=NB_width);
+
+    double eps = 1.e-8;
+    foreach(){
+      double norm_grad = 0.;
+      l[] = 1.;
+      if(fabs(dist[])<NB_width){
+        double delt = 0.;
+        l[]         = -10.;
+        if(dist[]>0.){
+          foreach_dimension(){
+            double a = max(0.,(dist[]    - dist[-1,0])/Delta);
+            double b = min(0.,(dist[1,0] - dist[]    )/Delta);
+            delt   += max(powf(a,2.),powf(b,2.));
+          }
+
+          delt             = max(eps,delt);
+
+          foreach_dimension(){
+            double a = max(0.,(dist[]    - dist[-1,0])/(delt*Delta));
+            double b = min(0.,(dist[1,0] - dist[]    )/(delt*Delta));
+            norm_grad   += max(powf(a,2.),powf(b,2.));
+          }
+        }
+        else{
+          foreach_dimension(){
+            double a = min(0.,(dist[]    - dist[-1,0])/Delta);
+            double b = max(0.,(dist[1,0] - dist[]    )/Delta);
+            delt   += max(powf(a,2.),powf(b,2.));
+          }
+
+          delt             = max(eps,delt);
+
+          foreach_dimension(){
+            double a = min(0.,(dist[]    - dist[-1,0])/(delt*Delta));
+            double b = max(0.,(dist[1,0] - dist[]    )/(delt*Delta));
+            norm_grad   += max(powf(a,2.),powf(b,2.));
+          }
+        }
+        l[] = max( l[], 1.-sqrt(delt) );
+      }
+    }
+    output_ppm (l, file = "grad_dist.png", n = 400);
+    norm n  = normf (l);
+    fprintf (stderr, "%d %g %g %g \n", N, n.avg, n.rms, n.max);
   }
 }
 
