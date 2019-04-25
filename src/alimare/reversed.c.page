@@ -16,8 +16,6 @@ scheme. */
 #include "alimare/level_set.h"
 // #include "alimare/elementary_body.h"
 
-double NB_width;
-
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
@@ -28,7 +26,6 @@ scalar f[], dist[];
 scalar * interfaces = {f}, * tracers = {dist};
 scalar * level_set = NULL;
 
-int MAXLEVEL;
 
 /**
 The initial interface is a circle of radius 0.2 centered on
@@ -38,6 +35,10 @@ function `circle()` to define this interface.
 The period of the stretching cycle is set to 15, which will lead to
 strong stretching. Milder conditions can be obtained by decreasing it. */
 
+int     MAXLEVEL;
+int     NB_cell_narrow =  1 << 2 ;
+double  NB_width ;
+int     N_display = 8;
 #define circle(x,y) (sq(0.1) - (sq(x + 0.2) + sq(y + .236338)))
 #define T 15.
 
@@ -51,8 +52,8 @@ int main() {
   /**
   We then run the simulation for different levels of refinement. */
 
-  for (MAXLEVEL = 6; MAXLEVEL <= 8; MAXLEVEL++) {
-    NB_width = L0/(1 << (MAXLEVEL-2));
+  for (MAXLEVEL = 5; MAXLEVEL <= N_display; MAXLEVEL++) {
+    NB_width = L0*NB_cell_narrow / (1<<MAXLEVEL);
     init_grid (1 << MAXLEVEL);
     run();
   }
@@ -83,8 +84,8 @@ event init (i = 0) {
   //                   -1.1*NB_width, 1.1*NB_width);
   // }
 
-  boundary({dist});
-  if (N == 128) {
+
+  if (N == N_display) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -176,18 +177,21 @@ event field (t = T) {
 We also output the shape of the reconstructed interface at regular
 intervals (but only on the finest grid considered). */
 
-// event shape (t += T/4.) {
-//   if (N == 128)
-//     output_facets (f);
-// }
+event shape (t += T/4.) {
+  if (N == N_display)
+    output_facets (f);
+}
 
 /**
 If we are using adaptivity, we also output the levels of refinement at
 maximum stretching. */
 
-// #if TREE
-event levels (t = T) {
-  if (N == 128) {
+#if TREE
+event levels (t = T/2) {
+  if (N == N_display) {
+
+event levels (t = T/2) {
+  if (N == N_display) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -204,8 +208,9 @@ event levels (t = T) {
   }
 }
 
-event levels2 (t += T/120) 
-{  if (N == 128) {
+
+event levels2 (t += T/300) 
+{  if (N == N_display) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -229,9 +234,10 @@ event levels2 (t += T/120)
 }
 // #endif
 
-event LS_reinitialization(i+=5,last){
+event LS_reinitialization(i++,last){
   if(i>15){
-    // LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width);
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
+      NB_cell_narrow << 1);
   }
 }
 

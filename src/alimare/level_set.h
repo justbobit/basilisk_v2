@@ -46,9 +46,9 @@ phi^0_{i}-phi^0_{i+1})$$
 
 Based on the work of Russo (2000)
  */
-void LS_reinit2(scalar dist, double dt, double NB){
+void LS_reinit2(scalar dist, double dt, double NB, int it_max){
   vector gr_LS[];
-  int i, it_max=100 ;
+  int i ;
   double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
 
