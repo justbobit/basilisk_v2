@@ -135,9 +135,9 @@ void LS_reinit2(scalar dist, double dt, double NB){
       }
     }
     boundary({dist});
-  if((i%10 == 0) & (i<it_max)) 
-    fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e \
-    %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
+  // if((i%10 == 0) & (i<it_max)) 
+  //   fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e \
+  //   %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
 
     if(res<eps){
       fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,
