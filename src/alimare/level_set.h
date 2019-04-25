@@ -116,17 +116,17 @@ void LS_reinit2(scalar dist, double dt, double NB){
         else 
           if(dist0[]>0){
           foreach_dimension(){
-            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
-            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
-            delt   += max(max(0.,powf(a,2.)),min(0., powf(b,2.)));
+            double a = max(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
+            double b = min(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
+            delt   += max(powf(a,2.),powf(b,2.));
           }
           delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
         else{
           foreach_dimension(){
-            double a = (dist_eps[]    - dist_eps[-1,0])/Delta;
-            double b = (dist_eps[1,0] - dist_eps[]    )/Delta;
-            delt   += max(min(0.,powf(a,2.)),max(0., powf(b,2.)));
+            double a = min(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
+            double b = max(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
+            delt   += max(powf(a,2.),powf(b,2.));
            }
            delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
