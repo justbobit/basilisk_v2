@@ -59,7 +59,7 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
     }
     boundary({dist_eps});
     
-    double xCFL = 0.8;
+    double xCFL = 1.;
 // 1) we make a copy of dist before iterating on it
 // 2) we determine xCFL according to the local size
     int sum = 0;
@@ -144,7 +144,7 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
         eps, xCFL,dt, NB);
       break;
     }
-    if(i==it_max)fprintf(stderr,"# REINIT NOT CONVERGED %d %6.2e %6.2e \n", sum,
-      res,eps);
+    // if(i==it_max)fprintf(stderr,"# REINIT NOT CONVERGED %d %6.2e %6.2e \n", sum,
+    //   res,eps);
   }
 }
