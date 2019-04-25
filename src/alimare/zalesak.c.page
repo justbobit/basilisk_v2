@@ -16,7 +16,7 @@ scheme. */
 #include "alimare/level_set.h"
 #define Pi 3.141592653589793
 #define T 2*3.14
-#define N_display 1 << 8
+#define N_display 1 << 7
 // #include "alimare/elementary_body.h"
 
 double NB_width;
@@ -43,8 +43,8 @@ int main() {
   /**
   We then run the simulation for different levels of refinement. */
 
-  for (MAXLEVEL = 8; MAXLEVEL <= 8; MAXLEVEL++) {
-    NB_width = L0/(1 << (MAXLEVEL-3));
+  for (MAXLEVEL = 5; MAXLEVEL <= 7; MAXLEVEL++) {
+    NB_width = L0/(1 << (MAXLEVEL-2));
     init_grid (1 << MAXLEVEL);
     run();
   }
@@ -200,7 +200,7 @@ If we are using adaptivity, we also output the levels of refinement at
 maximum stretching. */
 
 // #if TREE
-event levels (t = T) {
+event levels (t = {0,T}) {
   if (N == N_display) {
     scalar l[];
     // foreach()
@@ -238,15 +238,15 @@ event levels2 (t += T/120)
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -NB_width, max=NB_width);
+      opt = "--delay 1",min = -NB_width/10., max=NB_width/10.);
   }
 }
 // #endif
 
-event LS_reinitialization(i+=400,last){
+event LS_reinitialization(i+=100,last){
   if(i>15){
 //     NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
-    // LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
   }
 }
 

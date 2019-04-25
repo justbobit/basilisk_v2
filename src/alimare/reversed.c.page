@@ -46,13 +46,13 @@ We center the unit box on the origin and set a maximum timestep of 0.1 */
 
 int main() {
   origin (-0.5, -0.5);
-  DT = .1;
+  DT = T/1280;
   
   /**
   We then run the simulation for different levels of refinement. */
 
-  for (MAXLEVEL = 5; MAXLEVEL <= 7; MAXLEVEL++) {
-    NB_width = L0/(1 << (MAXLEVEL-3));
+  for (MAXLEVEL = 6; MAXLEVEL <= 8; MAXLEVEL++) {
+    NB_width = L0/(1 << (MAXLEVEL-2));
     init_grid (1 << MAXLEVEL);
     run();
   }
@@ -96,8 +96,8 @@ event init (i = 0) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist_init.png", n = 400, min = -NB_width,
-     max=NB_width);
+    output_ppm (l, file = "dist_init.png", n = 400, min = -1.1*NB_width,
+     max=1.1 *NB_width);
   }
 
 
@@ -186,7 +186,7 @@ If we are using adaptivity, we also output the levels of refinement at
 maximum stretching. */
 
 // #if TREE
-event levels (t = T/2) {
+event levels (t = T) {
   if (N == 128) {
     scalar l[];
     // foreach()
@@ -199,8 +199,8 @@ event levels (t = T/2) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist.png", n = 400, min = -NB_width,
-     max=NB_width);
+    output_ppm (l, file = "dist.png", n = 400, min = -0.05*NB_width,
+     max=0.05*NB_width);
   }
 }
 
@@ -224,15 +224,14 @@ event levels2 (t += T/120)
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -NB_width, max=NB_width);
+      opt = "--delay 1",min = -0.05*NB_width, max=0.05*NB_width);
   }
 }
 // #endif
 
-event LS_reinitialization(i+=400,last){
+event LS_reinitialization(i+=5,last){
   if(i>15){
-//     NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
-    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
+    // LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width);
   }
 }
 
