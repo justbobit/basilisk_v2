@@ -95,7 +95,7 @@ event init (i = 0) {
     // vertex scalar LS_vert[];
   fraction (f, circle(x,y));
   foreach_vertex(){
-    dist[] = clamp(circle(x,y), -1.1*NB_width, 1.1*NB_width);
+    dist[] = -clamp(circle(x,y), -1.1*NB_width, 1.1*NB_width);
     // dist[] = circle(x,y);
   }
   boundary({dist});
@@ -175,7 +175,7 @@ event field (t = T) {
   scalar e[], e2[];
   fraction (e, circle(x,y));
   foreach_vertex()
-    e2[] = circle(x,y);
+    e2[] = -circle(x,y);
   foreach(){
     e[]  -= f[];
     e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];

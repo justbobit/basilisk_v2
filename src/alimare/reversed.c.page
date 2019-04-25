@@ -64,22 +64,26 @@ We define the levelset function $\phi$ on each vertex of the grid and
 compute the corresponding volume fraction field. */
 
 event init (i = 0) {
-    // vertex scalar LS_vert[];
+  vertex scalar LS_vert[];
 
   fraction (f, circle(x,y));
   foreach_vertex(){
-    dist[] = clamp(circle(x,y), -1.1*NB_width, 1.1*NB_width);
+    // dist[] = -clamp(circle(x,y), -1.02*NB_width, 
+    //                 1.02*NB_width);
+    dist[] = -circle(x,y); 
+    // LS_vert[] = -circle(x,y);
   }
-  boundary({dist});
   // foreach() {
-  //   // double delta1 = LS_vert[1,0] - LS_vert[];
-  //   // double delta2 = LS_vert[0,1] - LS_vert[];
-  //   // double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
+    // double delta1 = LS_vert[1,0] - LS_vert[];
+    // double delta2 = LS_vert[0,1] - LS_vert[];
+    // double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+LS_vert[0,1]);
 
-  //   //dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
-  //   dist[] = LS_vert[];
+    // dist[] = clamp(1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[],
+  //   dist[] = clamp(LS_vert[]+Delta/2.,
+  //                   -1.1*NB_width, 1.1*NB_width);
   // }
 
+  boundary({dist});
   if (N == 128) {
     scalar l[];
     // foreach()
@@ -157,10 +161,10 @@ event field (t = T) {
   scalar e[], e2[];
   fraction (e, circle(x,y));
   foreach_vertex()
-    e2[] = circle(x,y);
+    e2[] = -circle(x,y);
   foreach(){
     e[]  -= f[];
-    e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];
+    e2[] -= fabs(dist[])< 0.25*NB_width ? dist[] : e2[];
   }
   norm n  = normf (e);
   norm n2 = normf (e2);
