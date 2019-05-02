@@ -9,18 +9,22 @@ errors accumulated during advection.
 
 We will need the advection solver combined with the VOF advection
 scheme. */
-#include "grid/cartesian.h"
+// #include "grid/cartesian.h"
 
+#include "utils.h"
+#include "distance.h"
+#include "tag.h"
 #include "advection.h"
 #include "vof.h"
 #include "alimare/level_set.h"
 #define Pi 3.141592653589793
-#define T 2*3.14
-#define N_display 1 << 7
+#define Nb_tour 2
+#define T 2*Nb_tour*3.14
+#define N_display 8
 // #include "alimare/elementary_body.h"
 
 double NB_width;
-
+int     nb_cell_NB =  1 << 2 ;  // number of cells for the NB
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
@@ -37,79 +41,47 @@ int MAXLEVEL;
 We center the unit box on the origin and set a maximum timestep of 0.1 */
 
 int main() {
-  origin (-0.5, -0.5);
-  DT = T/1280;
+
+  init_grid (8);
+  size (100);
+  origin (-15, -25);
   
   /**
   We then run the simulation for different levels of refinement. */
 
-  for (MAXLEVEL = 5; MAXLEVEL <= 7; MAXLEVEL++) {
-    NB_width = L0/(1 << (MAXLEVEL-2));
-    init_grid (1 << MAXLEVEL);
+  for (MAXLEVEL = 7; MAXLEVEL <= 8; MAXLEVEL++) {
+
     run();
   }
 }
-
-/** The initial interface is a notched circle of radius 0.2 centered on
-(-0.2,-0.236338) (for historical reasons). We use the levelset function
-`circle()` to define this interface. 
-
-The period of the stretching cycle is set to 15, which will lead to
-strong stretching. Milder conditions can be obtained by decreasing it. */
-
-// double circle(double x, double y) 
-// {
-//   double x_center  = 0., y_center =0.25*L0;
-//   double dd =0.;
-//   double threshold = sq(0.15) - sq(0.05);
-//   if(fabs(x)>0.05 | y > 0.35){
-//     dd = sq(0.15) - (sq(x - x_center) + sq(y - y_center));
-//   }
-//   else if(fabs(x) <0.05 & y > 0.25){
-//     dd = max(-0.05+fabs(x) ,y-0.35);
-//   }
-//   else if (fabs(x) <0.05 & y> 0.25-sqrt(threshold)){
-//     dd = -0.05+fabs(x);
-//   }
-//   else{
-//     dd = y - 0.25-sqrt(threshold);
-//   }
-//   return (dd);
-// }
-
-double circle(double x, double y) 
-{
-  double x_center  = 0., y_center =0.25*L0;
-  double dd =0.;
-  dd = sq(0.15) - (sq(x - x_center) + sq(y - y_center));
-  return (dd);
-}
-
-
 
 /**
 We define the levelset function $\phi$ on each vertex of the grid and
 compute the corresponding volume fraction field. */
 
 event init (i = 0) {
-    // vertex scalar LS_vert[];
-  fraction (f, circle(x,y));
+  DT = T/(1280*Nb_tour);
+  NB_width = L0*nb_cell_NB / (1<<MAXLEVEL);
+
+  coord * p = input_xy (fopen ("zalesak.gnu", "r"));
+
+  scalar d[];
+  distance (d, p);
+  while (adapt_wavelet ({d}, (double[]){1e-3}, MAXLEVEL+2).nf);
+
+
+  foreach_vertex()
+    dist[] = (d[] + d[-1] + d[0,-1] + d[-1,-1])/4.;
+  boundary ({dist});
+  face vector s[];
+  fractions (dist, f, s);
+
   foreach_vertex(){
-    dist[] = -clamp(circle(x,y), -1.1*NB_width, 1.1*NB_width);
-    // dist[] = circle(x,y);
+    dist[] = -clamp(dist[], -1.02*NB_width, 1.02*NB_width);
   }
   boundary({dist});
-  // foreach() {
-  //   // double delta1 = LS_vert[1,0] - LS_vert[];
-  //   // double delta2 = LS_vert[0,1] - LS_vert[];
-  //   // double delta3 = LS_vert[1,1] + LS_vert[] - (LS_vert[1,0]+
-  //                      LS_vert[0,1]);
-
-  //   //dist[] = 1./2.*(delta1 + delta2 +delta3/2.) + LS_vert[];
-  //   dist[] = LS_vert[];
-  // }
-
-  if (N == N_display) {
+  fprintf (stderr,"N %d %d \n", N, N_display);
+  if (1) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -144,10 +116,10 @@ event velocity (i++) {
 #endif
 
   foreach_face(x)
-    u.x[] = Pi/3.14*(-y);
+    u.x[] = Pi/3.14*(25-y);
 
   foreach_face(y)
-    u.y[] = Pi/3.14*(x);
+    u.y[] = Pi/3.14*(x-35);
   boundary ((scalar *){u});
 }
 
@@ -159,7 +131,7 @@ zero and one. */
 
 event logfile (t = {0,T}) {
   stats s = statsf (f);
-  fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s.sum, s.min, s.max);
+  fprintf (stderr, "#REZ %f %.12f %.9f %g %d \n", t, s.sum, s.min, s.max,N);
   stats s2 = statsf (dist);
   fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s2.sum, s2.min, s2.max);
 }
@@ -171,36 +143,23 @@ simulation with the initial shape and compute the difference with the
 final shape. We output the norms as functions of the maximum
 resolution `N`. */
 
-event field (t = T) {
-  scalar e[], e2[];
-  fraction (e, circle(x,y));
-  foreach_vertex()
-    e2[] = -circle(x,y);
-  foreach(){
-    e[]  -= f[];
-    e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];
-  }
-  norm n  = normf (e);
-  norm n2 = normf (e2);
-  fprintf (stderr, "%d %g %g %g %g %g %g\n", N, n.avg, n.rms, n.max, 
-            n2.avg, n2.rms, n2.max);
-}
-
-/**
-We also output the shape of the reconstructed interface at regular
-intervals (but only on the finest grid considered). */
-
-// event shape (t += T/4.) {
-//   if (N == 128)
-//     output_facets (f);
+// event field (t = T) {
+//   scalar e[], e2[];
+//   fraction (e, circle(x,y));
+//   foreach_vertex()
+//     e2[] = -circle(x,y);
+//   foreach(){
+//     e[]  -= f[];
+//     e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];
+//   }
+//   norm n  = normf (e);
+//   norm n2 = normf (e2);
+//   fprintf (stderr, "%d %g %g %g %g %g %g\n", N, n.avg, n.rms, n.max, 
+//             n2.avg, n2.rms, n2.max);
 // }
 
-/**
-If we are using adaptivity, we also output the levels of refinement at
-maximum stretching. */
-
-// #if TREE
-event levels (t = {0,T}) {
+#if TREE
+event levels (t = {T}) {
   if (N == N_display) {
     scalar l[];
     // foreach()
@@ -213,57 +172,57 @@ event levels (t = {0,T}) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist.png", n = 400, min = -NB_width,
+    output_ppm (l, file = "dist.png", n = 800, min = -NB_width,
      max=NB_width);
 
-    double eps = 1.e-8;
-    foreach(){
-      double norm_grad = 0.;
-      l[] = 1.;
-      if(fabs(dist[])<NB_width){
-        double delt = 0.;
-        l[]         = -10.;
-        if(dist[]>0.){
-          foreach_dimension(){
-            double a = max(0.,(dist[]    - dist[-1,0])/Delta);
-            double b = min(0.,(dist[1,0] - dist[]    )/Delta);
-            delt   += max(powf(a,2.),powf(b,2.));
-          }
+//     double eps = 1.e-8;
+//     foreach(){
+//       double norm_grad = 0.;
+//       l[] = 1.;
+//       if(fabs(dist[])<NB_width){
+//         double delt = 0.;
+//         l[]         = -10.;
+//         if(dist[]>0.){
+//           foreach_dimension(){
+//             double a = max(0.,(dist[]    - dist[-1,0])/Delta);
+//             double b = min(0.,(dist[1,0] - dist[]    )/Delta);
+//             delt   += max(powf(a,2.),powf(b,2.));
+//           }
 
-          delt             = max(eps,delt);
+//           delt             = max(eps,delt);
 
-          foreach_dimension(){
-            double a = max(0.,(dist[]    - dist[-1,0])/(delt*Delta));
-            double b = min(0.,(dist[1,0] - dist[]    )/(delt*Delta));
-            norm_grad   += max(powf(a,2.),powf(b,2.));
-          }
-        }
-        else{
-          foreach_dimension(){
-            double a = min(0.,(dist[]    - dist[-1,0])/Delta);
-            double b = max(0.,(dist[1,0] - dist[]    )/Delta);
-            delt   += max(powf(a,2.),powf(b,2.));
-          }
+//           foreach_dimension(){
+//             double a = max(0.,(dist[]    - dist[-1,0])/(delt*Delta));
+//             double b = min(0.,(dist[1,0] - dist[]    )/(delt*Delta));
+//             norm_grad   += max(powf(a,2.),powf(b,2.));
+//           }
+//         }
+//         else{
+//           foreach_dimension(){
+//             double a = min(0.,(dist[]    - dist[-1,0])/Delta);
+//             double b = max(0.,(dist[1,0] - dist[]    )/Delta);
+//             delt   += max(powf(a,2.),powf(b,2.));
+//           }
 
-          delt             = max(eps,delt);
+//           delt             = max(eps,delt);
 
-          foreach_dimension(){
-            double a = min(0.,(dist[]    - dist[-1,0])/(delt*Delta));
-            double b = max(0.,(dist[1,0] - dist[]    )/(delt*Delta));
-            norm_grad   += max(powf(a,2.),powf(b,2.));
-          }
-        }
-        l[] = max( l[], 1.-sqrt(delt) );
-      }
-    }
-    output_ppm (l, file = "grad_dist.png", n = 400);
-    norm n  = normf (l);
-    fprintf (stderr, "%d %g %g %g \n", N, n.avg, n.rms, n.max);
+//           foreach_dimension(){
+//             double a = min(0.,(dist[]    - dist[-1,0])/(delt*Delta));
+//             double b = max(0.,(dist[1,0] - dist[]    )/(delt*Delta));
+//             norm_grad   += max(powf(a,2.),powf(b,2.));
+//           }
+//         }
+//         l[] = max( l[], 1.-sqrt(delt) );
+//       }
+//     }
+//     output_ppm (l, file = "grad_dist.png", n = 400);
+//     norm n  = normf (l);
+//     // fprintf (stderr, "%d %g %g %g \n", N, n.avg, n.rms, n.max);
   }
 }
 
-event levels2 (t += T/120) 
-{  if (N == N_display) {
+event levels2 (t += T/(100*Nb_tour)) 
+{  if (MAXLEVEL == N_display) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -282,15 +241,16 @@ event levels2 (t += T/120)
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -NB_width/10., max=NB_width/10.);
+      opt = "--delay 1",min = -1.1*NB_width, max=1.1*NB_width);
   }
 }
-// #endif
+#endif
 
-event LS_reinitialization(i+=100,last){
+event LS_reinitialization(i+=4,last){
   if(i>15){
-//     NB_width = L0/(1 << (MAXLEVEL-3));// NarrowBand_width for level_set
-    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width/2.);
+      // fprintf (stderr, "#REZ %f \n",t);
+    // LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
+      // 1.4*(nb_cell_NB << 1));
   }
 }
 
