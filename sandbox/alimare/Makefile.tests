@@ -1,0 +1,22 @@
+# Automatically generated using 'make Makefile.tests'
+# DO NOT EDIT, edit 'Makefile' instead
+ALLTESTS = \
+	LS_mwe.c \
+	reversed.c \
+	solidification_Gibbs_Thomson.c \
+	zalesak.c \
+
+plots: \
+	reversed/plots \
+	zalesak/plots \
+
+TESTS = \
+
+SPECIAL_TESTS = \
+
+ALLPAGES = \
+	alex_functions.h.page \
+	level_set.h.page \
+	reversed.c.page \
+	zalesak.c.page \
+

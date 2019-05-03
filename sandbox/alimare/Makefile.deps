@@ -1,0 +1,218 @@
+# Automatically generated using 'make Makefile.tests'
+# DO NOT EDIT, edit 'Makefile' instead
+ALLTESTS = \
+	LS_mwe.c \
+	reversed.c \
+	solidification_Gibbs_Thomson.c \
+	zalesak.c \
+
+plots: \
+	reversed/plots \
+	zalesak/plots \
+
+TESTS = \
+
+SPECIAL_TESTS = \
+
+ALLPAGES = \
+	alex_functions.h.page \
+	level_set.h.page \
+	reversed.c.page \
+	zalesak.c.page \
+
+LS_mwe.s:	\
+	/home/limare/basilisk_v2/src/navier-stokes/centered.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/viscosity-embed.h \
+	/home/limare/basilisk_v2/src/viscosity.h \
+	/home/limare/basilisk_v2/src/poisson.h \
+	/home/limare/basilisk_v2/src/poisson.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+reversed.s:	\
+	/home/limare/basilisk_v2/src/grid/cartesian.h \
+	/home/limare/basilisk_v2/src/advection.h \
+	/home/limare/basilisk_v2/src/vof.h \
+	/home/limare/basilisk_v2/src/fractions.h \
+	/home/limare/basilisk_v2/src/geometry.h \
+	/home/limare/basilisk_v2/src/myc2d.h \
+	/home/limare/basilisk_v2/src/myc.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/tracer.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+solidification_Gibbs_Thomson.s:	\
+	/home/limare/basilisk_v2/src/navier-stokes/centered.h \
+	/home/limare/basilisk_v2/src/tension.h \
+	/home/limare/basilisk_v2/src/iforce.h \
+	/home/limare/basilisk_v2/src/curvature.h \
+	/home/limare/basilisk_v2/src/heights.h \
+	/home/limare/basilisk_v2/src/parabola.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/viscosity-embed.h \
+	/home/limare/basilisk_v2/src/viscosity.h \
+	/home/limare/basilisk_v2/src/poisson.h \
+	/home/limare/basilisk_v2/src/poisson.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+zalesak.s:	\
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/distance.h \
+	/home/limare/basilisk_v2/src/tag.h \
+	/home/limare/basilisk_v2/src/advection.h \
+	/home/limare/basilisk_v2/src/vof.h \
+	./../alimare/level_set.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/fractions.h \
+	/home/limare/basilisk_v2/src/geometry.h \
+	/home/limare/basilisk_v2/src/myc2d.h \
+	/home/limare/basilisk_v2/src/myc.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/tracer.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/PointTriangle.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+alex_functions.h.tags:	\
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+level_set.h.tags:	\
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+reversed.c.tags:	\
+	/home/limare/basilisk_v2/src/grid/cartesian.h \
+	/home/limare/basilisk_v2/src/advection.h \
+	/home/limare/basilisk_v2/src/vof.h \
+	/home/limare/basilisk_v2/src/fractions.h \
+	/home/limare/basilisk_v2/src/geometry.h \
+	/home/limare/basilisk_v2/src/myc2d.h \
+	/home/limare/basilisk_v2/src/myc.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/tracer.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
+zalesak.c.tags:	\
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/distance.h \
+	/home/limare/basilisk_v2/src/tag.h \
+	/home/limare/basilisk_v2/src/advection.h \
+	/home/limare/basilisk_v2/src/vof.h \
+	./../alimare/level_set.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/fractions.h \
+	/home/limare/basilisk_v2/src/geometry.h \
+	/home/limare/basilisk_v2/src/myc2d.h \
+	/home/limare/basilisk_v2/src/myc.h \
+	/home/limare/basilisk_v2/src/run.h \
+	/home/limare/basilisk_v2/src/timestep.h \
+	/home/limare/basilisk_v2/src/tracer.h \
+	/home/limare/basilisk_v2/src/bcg.h \
+	/home/limare/basilisk_v2/src/utils.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/PointTriangle.h \
+	/home/limare/basilisk_v2/src/output.h \
+	/home/limare/basilisk_v2/src/grid/quadtree.h \
+	/home/limare/basilisk_v2/src/grid/tree.h \
+	/home/limare/basilisk_v2/src/grid/mempool.h \
+	/home/limare/basilisk_v2/src/grid/foreach_cell.h \
+	/home/limare/basilisk_v2/src/grid/neighbors.h \
+	/home/limare/basilisk_v2/src/grid/tree-common.h \
+	/home/limare/basilisk_v2/src/grid/tree-mpi.h \
+	/home/limare/basilisk_v2/src/grid/balance.h \
+	/home/limare/basilisk_v2/src/grid/multigrid-common.h \
+	/home/limare/basilisk_v2/src/grid/cartesian-common.h \
+	/home/limare/basilisk_v2/src/grid/events.h \
+	/home/limare/basilisk_v2/src/grid/fpe.h \
+	/home/limare/basilisk_v2/src/common.h \
+
