@@ -16,11 +16,11 @@ scheme. */
 #include "tag.h"
 #include "advection.h"
 #include "vof.h"
-#include "alimare/level_set.h"
+#include "../alimare/level_set.h"
 #define Pi 3.141592653589793
 #define Nb_tour 2
 #define T 2*Nb_tour*3.14
-#define N_display 8
+#define N_display 1 << 8
 // #include "alimare/elementary_body.h"
 
 double NB_width;
@@ -42,7 +42,7 @@ We center the unit box on the origin and set a maximum timestep of 0.1 */
 
 int main() {
 
-  init_grid (8);
+
   size (100);
   origin (-15, -25);
   
@@ -50,7 +50,7 @@ int main() {
   We then run the simulation for different levels of refinement. */
 
   for (MAXLEVEL = 7; MAXLEVEL <= 8; MAXLEVEL++) {
-
+    init_grid (1 << MAXLEVEL);
     run();
   }
 }
@@ -67,7 +67,7 @@ event init (i = 0) {
 
   scalar d[];
   distance (d, p);
-  while (adapt_wavelet ({d}, (double[]){1e-3}, MAXLEVEL+2).nf);
+  // while (adapt_wavelet ({d}, (double[]){1e-3}, MAXLEVEL+2).nf);
 
 
   foreach_vertex()
@@ -93,8 +93,8 @@ event init (i = 0) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist_init.png", n = 400, min = -NB_width,
-     max=NB_width);
+    output_ppm (l, file = "dist_init.png", n = 800, min = -0.1*NB_width,
+     max=0.1*NB_width);
   }
 
 
@@ -131,7 +131,7 @@ zero and one. */
 
 event logfile (t = {0,T}) {
   stats s = statsf (f);
-  fprintf (stderr, "#REZ %f %.12f %.9f %g %d \n", t, s.sum, s.min, s.max,N);
+  fprintf (stderr, "#REZ %f %.12f %.9f %g \n", t, s.sum, s.min, s.max);
   stats s2 = statsf (dist);
   fprintf (stderr, "#REZ %f %.12f %.9f %g\n", t, s2.sum, s2.min, s2.max);
 }
@@ -145,9 +145,25 @@ resolution `N`. */
 
 // event field (t = T) {
 //   scalar e[], e2[];
-//   fraction (e, circle(x,y));
+
+//   coord * p = input_xy (fopen ("zalesak.gnu", "r"));
+
+//   scalar d[];
+//   distance (d, p);
+//   // while (adapt_wavelet ({d}, (double[]){1e-3}, MAXLEVEL+2).nf);
+
+
 //   foreach_vertex()
-//     e2[] = -circle(x,y);
+//     e2[] = (d[] + d[-1] + d[0,-1] + d[-1,-1])/4.;
+//   boundary ({e2});
+//   face vector s[];
+//   fractions (e2, e, s);
+
+//   foreach_vertex(){
+//     e2[] = -clamp(dist[], -1.02*NB_width, 1.02*NB_width);
+//   }
+//   boundary({dist});
+
 //   foreach(){
 //     e[]  -= f[];
 //     e2[] -= fabs(dist[])< NB_width/2. ? dist[] : e2[];
@@ -172,8 +188,8 @@ event levels (t = {T}) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist.png", n = 800, min = -NB_width,
-     max=NB_width);
+    output_ppm (l, file = "dist.png", n = 800, min = -0.1*NB_width,
+     max=0.1*NB_width);
 
 //     double eps = 1.e-8;
 //     foreach(){
@@ -222,7 +238,8 @@ event levels (t = {T}) {
 }
 
 event levels2 (t += T/(100*Nb_tour)) 
-{  if (MAXLEVEL == N_display) {
+{ fprintf(stderr,"%g %g \n",N,N_display );
+  if (N == N_display) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -241,7 +258,7 @@ event levels2 (t += T/(100*Nb_tour))
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -1.1*NB_width, max=1.1*NB_width);
+      opt = "--delay 1",min = -0.1*NB_width, max=0.1*NB_width);
   }
 }
 #endif
@@ -249,8 +266,8 @@ event levels2 (t += T/(100*Nb_tour))
 event LS_reinitialization(i+=4,last){
   if(i>15){
       // fprintf (stderr, "#REZ %f \n",t);
-    // LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
-      // 1.4*(nb_cell_NB << 1));
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
+      1.4*(nb_cell_NB << 1));
   }
 }
 
