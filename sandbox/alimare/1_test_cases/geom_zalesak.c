@@ -46,7 +46,7 @@ We define first 2 basic geometric functions, a shpere and a cube.
 The cube is centered on "center", and has a lenght of "size".
 */
 
-double cubeF(double x, double y, double z, coord center, double size) {
+double rectangle(double x, double y, coord center, coord size) {
 
   /**
   Our cube is defined as the intersection of 6 orthogonal planes. We
@@ -55,30 +55,20 @@ double cubeF(double x, double y, double z, coord center, double size) {
   Then we define P1 has: 
   $$ P1 = P1_{Plus}\cap -P1_{Minus}$$*/
 
-  double P1_Plus = x - size/2. + center.x;
-  double P1_Minus = x + size/2. + center.x;
+  double P1_Plus = x - size.x/2. + center.x;
+  double P1_Minus = x + size.x/2. + center.x;
 
   double P1 = max (P1_Plus, -P1_Minus);
 
   /**
   We apply the same process to otain P2 and P3 */
 
-  double P2_Plus = y - size/2. + center.y;
-  double P2_Minus = y + size/2. + center.y;
+  double P2_Plus = y - size.y/2. + center.y;
+  double P2_Minus = y + size.y/2. + center.y;
 
   double P2 = max (P2_Plus, -P2_Minus);
 
-  double P3_Plus = z - size/2. + center.z;
-  double P3_Minus = z + size/2. + center.z;
-
-  double P3 = max (P3_Plus, -P3_Minus);
-
-  /**
-  At the end, our cube is:
-
-  $$P1 \cap P2 \cap P3 $$*/
-
-  double c = max ( P1, max (P2, P3) );
+  double c = max ( P1,P2 );
 
   return c;
 }
@@ -87,9 +77,8 @@ double cubeF(double x, double y, double z, coord center, double size) {
 The sphere function will return a sphere, centered on "center", of
 radius "radius"*/
 
-double sphere(double x, double y, double z, coord center, double radius) {
-  return ( sq(x - center.x) + sq (y - center.y) + sq (z - center.z)
-	   - sq (radius));
+double circle(double x, double y,  coord center, double radius) {
+  return ( sq(x - center.x) + sq (y - center.y) - sq (radius));
 }
 
 /**
@@ -99,39 +88,27 @@ $y$ and $z$ (respectively $X$, $Y$ and $Z$).
 
 $$ (C \cap S) - (X \cup Y \cup Z)$$*/
 
-double geometry(double x, double y, double z) {
+double geometry(double x, double y) {
 
-  coord center;
-  foreach_dimension()
-    center.x = 0;
+  coord center_circle, center_rectangle, size_rectangle;
+  center_circle.x = center_rectangle.x = 0.5;
+  center_circle.y = 0.75;
+
+  center_rectangle.y = 0.725;
+
+  size_rectangle.x = 0.05;
+  size_rectangle.y = 0.25; 
 
   /**
   We define the sphere and the cube */
-  double s = sphere (x, y, z, center, 0.25);
-  double c = cubeF (x, y, z, center, 0.38);
+  double s = circle (x, y, center_circle, 0.15);
+  double r = rectangle (x, y, center_rectangle, size_rectangle);
 
   /**
   sIc is the intersection between the sphere and the cube. */
-  double sIc = max (s, c);
+  double zalesak = max (s, -r);
 
-  /**
-  We define the 3 cylinders allong the $x$, $y$ and $z$ axis. */
-  double cylinder1 = sq(x) + sq(y) - sq(0.12);
-  double cylinder2 = sq(z) + sq(y) - sq(0.12);
-  double cylinder3 = sq(x) + sq(z) - sq(0.12);
-
-  /**
-  We use an intermediate object for the union (to decompose the process)*/
-
-  double cylinderInter = min(cylinder1, cylinder2);
-  double cylinderUnion = min(cylinderInter, cylinder3);
-
-  /**
-  Finally, we define the geometry we will return. */
-
-  double geom = max(sIc, -cylinderUnion);
-
-  return geom;
+  return zalesak;
 }
 
 
@@ -144,7 +121,6 @@ int main() {
   /**
   We shift the origin so that the simulation domain will be centered
   on $(0,0,0)$ */
-  origin(-0.5, -0.5, -0.5);
 
   /**
   We initialise the grid with 7 levels. */
@@ -159,7 +135,7 @@ int main() {
   int iteration = 0;
   do {
     iteration++;
-    fraction(f, geometry (x, y, z));
+    fraction(f, geometry (x, y));
   }while (adapt_wavelet({f}, (double []){0.2},
     maxlevel = 9, 2).nf != 0 && iteration <= 10);
 
@@ -170,8 +146,12 @@ int main() {
   ![Reconstructed VOF surface.](csgBool/vof.png)
  */
   
-  view (fov = 13.0359, quat = {-0.353553,0.353553,0.146447,0.853553}, 
-    tx = 0, ty = 0, bg = {0.3,0.4,0.6}, width = 800, height = 800, samples = 4);
-  draw_vof("f", edges = true);
-  save ("vof.png");
+  scalar l[];
+    // foreach()
+    //   l[] = level;
+    // output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
+
+    foreach()
+      l[] = f[];
+    output_ppm (l, file = "vof.png", n = 400, min = 0, max = 1);
 }
