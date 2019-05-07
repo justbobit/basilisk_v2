@@ -29,7 +29,8 @@ scalar * level_set = NULL;
 /**
 Here are the parameters for the simulation. We use a narrow band (NB) approach 
 meaning that the level set function has meaning only in the direct vicinity of 
-the 0 value of the level set function. For this test case, the NB is made of only 4 cells. 
+the 0 value of the level set function. For this test case, the NB is made of 
+only 4 cells. 
  */
 
 int     MAXLEVEL;
