@@ -45,7 +45,7 @@ int main() {
   /**
   We then run the simulation for different levels of refinement. */
 
-  for (MAXLEVEL = 7; MAXLEVEL <= 8; MAXLEVEL++) {
+  for (MAXLEVEL = 6; MAXLEVEL <= 8; MAXLEVEL++) {
     init_grid (1 << MAXLEVEL);
     run();
   }
