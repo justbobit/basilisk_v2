@@ -28,7 +28,7 @@ functions like compute the normal in every cell. */
 #include "vof.h"
 #include "diffusion.h"
 #include "curvature.h"
-#include "alimare/my_functions.h"
+#include "../sandbox/alimare/my_functions.h"
 
 /**
 We add three attribute to the scalar field: a diffusion coefficient $D$, a 

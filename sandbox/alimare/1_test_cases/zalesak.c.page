@@ -16,7 +16,7 @@ scheme. */
 #include "tag.h"
 #include "advection.h"
 #include "vof.h"
-#include "../alimare/level_set.h"
+#include "../sandbox/alimare/level_set.h"
 #define Pi 3.141592653589793
 #define Nb_tour 2
 #define T 2*Nb_tour*3.14
@@ -237,8 +237,8 @@ event levels (t = {T}) {
   }
 }
 
-event levels2 (t += T/(100*Nb_tour)) 
-{ fprintf(stderr,"%g %g \n",N,N_display );
+event levels2 (t += T/(100*Nb_tour)){
+ // fprintf(stderr,"%d %d \n",N,N_display );
   if (N == N_display) {
     scalar l[];
     // foreach()

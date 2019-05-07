@@ -18,7 +18,7 @@ extern double dt;
 /**
 The integration is performed using the Bell-Collela-Glaz scheme. */
 #include "bcg.h"
-#include "alimare/alex_functions.h"
+#include "../sandbox/alimare/alex_functions.h"
 event LS_advection (i++,last) {
   // printf("%d \n", i);
   advection (level_set, uf, dt);
@@ -79,9 +79,9 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
         if(min_neighb < 0.){
           double dist1= 0., dist2= 0.,dist3= 0.;
           foreach_dimension(){
-            dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
-            dist2 += powf((dist0[1,0]-dist0[    ]),2.);
-            dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+            dist1 += pow((dist0[1,0]-dist0[-1,0])/2.,2.);
+            dist2 += pow((dist0[1,0]-dist0[    ]),2.);
+            dist3 += pow((dist0[   ]-dist0[-1,0]),2.);
           }
           double Dij = Delta*dist0[]/
                   max(eps2,sqrt(max(dist1,max(dist2,dist3))));
@@ -105,9 +105,9 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
         if(min_neighb < 0.){
           double dist1= 0., dist2= 0.,dist3= 0.;
           foreach_dimension(){
-            dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
-            dist2 += powf((dist0[1,0]-dist0[    ]),2.);
-            dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+            dist1 += pow((dist0[1,0]-dist0[-1,0])/2.,2.);
+            dist2 += pow((dist0[1,0]-dist0[    ]),2.);
+            dist3 += pow((dist0[   ]-dist0[-1,0]),2.);
           }
           double Dij = Delta*dist0[]/
                   max(eps2,sqrt(max(dist1,max(dist2,dist3))));
@@ -118,7 +118,7 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
           foreach_dimension(){
             double a = max(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
             double b = min(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
-            delt   += max(powf(a,2.),powf(b,2.));
+            delt   += max(pow(a,2.),pow(b,2.));
           }
           delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
@@ -126,7 +126,7 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
           foreach_dimension(){
             double a = min(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
             double b = max(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
-            delt   += max(powf(a,2.),powf(b,2.));
+            delt   += max(pow(a,2.),pow(b,2.));
            }
            delt = sign2(dist0[])*(sqrt(delt) - 1.);
         }
@@ -136,7 +136,7 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
     }
     boundary({dist});
   // if((i%10 == 0) & (i<it_max)) 
-  //   fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e \
+  //   fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e 
   //   %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
 
     if(res<eps){
