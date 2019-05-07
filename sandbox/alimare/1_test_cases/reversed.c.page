@@ -9,11 +9,10 @@ errors accumulated during advection.
 
 We will need the advection solver combined with the VOF advection
 scheme and the reinitialization function of the LS function. */
-#include "grid/cartesian.h"
 
 #include "advection.h"
 #include "vof.h"
-#include "alimare/level_set.h"
+#include "../sandbox/alimare/level_set.h"
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
@@ -83,7 +82,7 @@ event init (i = 0) {
     dist[] = -clamp(circle(x,y), -1.02*NB_width, 1.02*NB_width);
   }
 
-  if (N == N_display) {
+  if (N == (1<<N_display)) {
     scalar l[];
     // foreach()
     //   l[] = level;
@@ -178,7 +177,7 @@ We also output the shape of the reconstructed interface at regular
 intervals (but only on the finest grid considered). */
 
 event shape (t += T/4.) {
-  if (N == N_display)
+  if (N == (1<<N_display))
     output_facets (f);
 }
 
@@ -188,7 +187,7 @@ maximum stretching. */
 
 #if TREE
 event levels (t = T/2) {
-  if (N == N_display) {
+  if (N == (1<<N_display)) {
     scalar l[];
     foreach()
       l[] = level;
@@ -220,20 +219,20 @@ We make simple movies showing the field `f`, the cells used for the NB and the
 level set function during the simulation.
 */
 
-event levels2 (t += T/300) 
-{  if (N == N_display) {
+event levels2 (t += T/300){
+  if (N == (1<<N_display)) {
+  
     scalar l[];
-
 
     foreach()
       l[] = f[];
     output_ppm (l, file = "f_reversed2.gif", n = 400, 
       opt = "--delay 1",min = 0, max = 1);
 
-    foreach()
-      l[] = fabs(dist[]) < NB_width ? 1. : 0.;
-    output_ppm (l, file = "NB.gif", n = 400, 
-      opt = "--delay 1",min = 0, max = 1);
+    // foreach()
+    //   l[] = fabs(dist[]) < NB_width ? 1. : 0.;
+    // output_ppm (l, file = "NB.gif", n = 400, 
+    //   opt = "--delay 1",min = 0, max = 1);
 
     foreach()
       l[] = dist[];
@@ -273,7 +272,35 @@ We use gnuplot (see [reversed.plot]()) to compute the convergence rate
 of the error norms with and without adaptation. The convergence rates
 are comparable.
 
-![Convergence rates for constant- and adaptive grids.](reversed/plot.png)
+~~~gnuplot Convergence rates for constant- and adaptive grids
+
+ftitle(a,b) = sprintf("%.0f/x^{%4.2f}", exp(a), -b)
+
+f(x)=a+b*x
+fit f(x) 'log' u (log($1)):(log($4)) via a,b
+f2(x)=a2+b2*x
+fit f2(x) 'log' u (log($1)):(log($2)) via a2,b2
+
+f3(x)=a3+b3*x
+fit f3(x) 'log' u (log($1)):(log($7)) via a3,b3
+f4(x)=a4+b4*x
+fit f4(x) 'log' u (log($1)):(log($5)) via a4,b4
+
+set xlabel 'Maximum resolution'
+set ylabel 'Maximum error'
+set key bottom left
+set logscale
+set xrange [16:256]
+set xtics 16,2,256
+set grid ytics
+set cbrange [1:1]
+
+plot 'log' u 1:4 t 'VOF max (cart)'  , exp(f(log(x)))       t ftitle(a ,b ), \
+     'log' u 1:2 t 'VOF norm1 (cart)', exp(f2(log(x))) lw 3 t ftitle(a2,b2), \
+     'log' u 1:7 t 'LS max (cart)'   , exp(f3(log(x)))      t ftitle(a3,b3), \
+     'log' u 1:5 t 'LS norm1 (cart)' , exp(f4(log(x))) lw 3 t ftitle(a4,b4)
+
+~~~
 
 The shapes of the interface at $t=0$, $t=T/4$, $t=T/2$, $t=3T/4$ and
 $t=T$ are displayed below for both sets of simulations (constant and
@@ -282,7 +309,11 @@ those for $t=3T/4$ and similarly for $t=0$ and $t=T$ (for which we
 measure the error). Note that the errors for $t=3T/4$ seem to be much
 larger than those for $t=T$.
 
-![Shapes of the interface for $t=0$, $t=T/4$, $t=T/2$, $t=3T/4$ and
-$t=T$ for two sets of simulations.](reversed/interface.png) 
+~~~gnuplot Shapes of the interface
+reset
+set size ratio -1
+plot [-0.5:0.5][-0.5:0.5]'out' w l t "adaptive"
+~~~
 
-![Refinement levels for $t=T/2$ and $N=N_{display}$.](reversed/levels.png) */
+![Animation of the level set function](reversed/dist2.gif)(width="800" height="600") */
+
