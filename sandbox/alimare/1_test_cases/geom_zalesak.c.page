@@ -88,12 +88,12 @@ level set function.
   scalar l[];
   foreach()
     l[] = f[];
-  output_ppm (l, file = "vof.png", n = 400, min = 0, max = 1);
+  output_ppm (l, file = "vof.png", n = 800, min = 0, max = 1);
   output_facets(f);
 
   foreach()
     l[] = level;
-  output_ppm (l, file = "levels.png", n = 400, min = 0, max = 9);
+  output_ppm (l, file = "levels.png", n = 800, min = 0, max = 9);
   output_facets(f);
 
   FILE * fp1 = fopen ("zalesak.gnu","w");
@@ -107,9 +107,9 @@ points. Of course we start and end with the same point. Thus, we have properly
 defined a closed contour which can be used for the distance() function.
 
 */
-  double theta_i = atan(2.5e-2/0.625);
-  double theta_f = 2*Pi-theta_i;
-  double delta_theta = 0.5*2*Pi/360.;
+  double theta_i = acos(sqrt(1-sq(0.025/0.15)));
+  double theta_f = 2.*Pi-theta_i;
+  double delta_theta = 0.5*2.*Pi/360.;
   double theta;
   fprintf(fp1,"0.525 0.625\n" ); // first point
 
@@ -121,10 +121,10 @@ defined a closed contour which can be used for the distance() function.
 
   // and last but not least
   fprintf(fp1,"0.475 0.625\n" );
-  fprintf(fp1,"0.475 0.9\n");
-  fprintf(fp1,"0.525 0.9\n");
+  fprintf(fp1,"0.475 0.85\n");
+  fprintf(fp1,"0.525 0.85\n");
 
-  fprintf(fp1,"0.525 0.625\n" ); // first point
+  fprintf(fp1,"0.525 0.625" ); // first point
 
   fclose(fp1);
 
