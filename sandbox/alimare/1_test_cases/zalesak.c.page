@@ -41,10 +41,6 @@ int MAXLEVEL;
 We center the unit box on the origin and set a maximum timestep of 0.1 */
 
 int main() {
-
-
-  size (100);
-  origin (-15, -25);
   
   /**
   We then run the simulation for different levels of refinement. */
@@ -118,10 +114,10 @@ event velocity (i++) {
 #endif
 
   foreach_face(x)
-    u.x[] = Pi/3.14*(25-y);
+    u.x[] = Pi/3.14*(0.5-y);
 
   foreach_face(y)
-    u.y[] = Pi/3.14*(x-35);
+    u.y[] = Pi/3.14*(x-0.5);
   boundary ((scalar *){u});
 }
 
