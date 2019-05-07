@@ -79,17 +79,9 @@ event init (i = 0) {
   fprintf (stderr,"N %d %d \n", N, N_display);
   if (1) {
     scalar l[];
-    // foreach()
-    //   l[] = level;
-    // output_ppm (l, file = "levels_init.png", n = 400, min = 0, max = 7);
-
-    foreach()
-      l[] = f[];
-    output_ppm (l, file = "f_reversed_init.png", n = 800, min = 0, max = 1);
-
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist_init.png", n = 800, min = -0.1*NB_width,
+    output_ppm (l, file = "dist_init.png", n = 400, min = -0.1*NB_width,
      max=0.1*NB_width);
   }
 
@@ -170,89 +162,38 @@ event field (t = T) {
 event levels (t = {T}) {
   if (N == N_display) {
     scalar l[];
-    // foreach()
-    //   l[] = level;
-    // output_ppm (l, file = "levels.png", n = 400, min = 0, max = 7);
-
-    foreach()
-      l[] = f[];
-    output_ppm (l, file = "f_reversed.png", n = 800, min = 0, max = 1);
-
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist.png", n = 400, min = -0.1*NB_width,
      max=0.1*NB_width);
 
-//     double eps = 1.e-8;
-//     foreach(){
-//       double norm_grad = 0.;
-//       l[] = 1.;
-//       if(fabs(dist[])<NB_width){
-//         double delt = 0.;
-//         l[]         = -10.;
-//         if(dist[]>0.){
-//           foreach_dimension(){
-//             double a = max(0.,(dist[]    - dist[-1,0])/Delta);
-//             double b = min(0.,(dist[1,0] - dist[]    )/Delta);
-//             delt   += max(powf(a,2.),powf(b,2.));
-//           }
-
-//           delt             = max(eps,delt);
-
-//           foreach_dimension(){
-//             double a = max(0.,(dist[]    - dist[-1,0])/(delt*Delta));
-//             double b = min(0.,(dist[1,0] - dist[]    )/(delt*Delta));
-//             norm_grad   += max(powf(a,2.),powf(b,2.));
-//           }
-//         }
-//         else{
-//           foreach_dimension(){
-//             double a = min(0.,(dist[]    - dist[-1,0])/Delta);
-//             double b = max(0.,(dist[1,0] - dist[]    )/Delta);
-//             delt   += max(powf(a,2.),powf(b,2.));
-//           }
-
-//           delt             = max(eps,delt);
-
-//           foreach_dimension(){
-//             double a = min(0.,(dist[]    - dist[-1,0])/(delt*Delta));
-//             double b = max(0.,(dist[1,0] - dist[]    )/(delt*Delta));
-//             norm_grad   += max(powf(a,2.),powf(b,2.));
-//           }
-//         }
-//         l[] = max( l[], 1.-sqrt(delt) );
-//       }
-//     }
-//     output_ppm (l, file = "grad_dist.png", n = 400);
-//     norm n  = normf (l);
-//     // fprintf (stderr, "%d %g %g %g \n", N, n.avg, n.rms, n.max);
   }
 }
 
-event levels2 (t += T/(100*Nb_tour)){
- // fprintf(stderr,"%d %d \n",N,N_display );
-  if (N == N_display) {
-    scalar l[];
-    // foreach()
-    //   l[] = level;
-    // output_ppm (l, file = "levels2.gif", n = 400, min = 0, max = 7);
+// event levels2 (t += T/(100*Nb_tour)){
+//  // fprintf(stderr,"%d %d \n",N,N_display );
+//   if (N == N_display) {
+//     scalar l[];
+//     // foreach()
+//     //   l[] = level;
+//     // output_ppm (l, file = "levels2.gif", n = 400, min = 0, max = 7);
 
-    foreach()
-      l[] = f[];
-    output_ppm (l, file = "f_reversed2.gif", n = 800, 
-      opt = "--delay 1",min = 0, max = 1);
+//     foreach()
+//       l[] = f[];
+//     output_ppm (l, file = "f_reversed2.gif", n = 800, 
+//       opt = "--delay 1",min = 0, max = 1);
 
-    foreach()
-      l[] = fabs(dist[]) < NB_width ? 1. : 0.;
-    output_ppm (l, file = "NB.gif", n = 400, 
-      opt = "--delay 1",min = 0, max = 1);
+//     foreach()
+//       l[] = fabs(dist[]) < NB_width ? 1. : 0.;
+//     output_ppm (l, file = "NB.gif", n = 400, 
+//       opt = "--delay 1",min = 0, max = 1);
 
-    foreach()
-      l[] = dist[];
-    output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -0.1*NB_width, max=0.1*NB_width);
-  }
-}
+//     foreach()
+//       l[] = dist[];
+//     output_ppm (l, file = "dist2.gif", n = 400, 
+//       opt = "--delay 1",min = -0.1*NB_width, max=0.1*NB_width);
+//   }
+// }
 #endif
 
 event LS_reinitialization(i+=4,last){
