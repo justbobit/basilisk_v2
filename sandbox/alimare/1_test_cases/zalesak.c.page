@@ -35,6 +35,57 @@ scalar f[], dist[];
 scalar * interfaces = {f}, * tracers = {dist};
 scalar * level_set = NULL;
 
+coord * ZalesakCurve(void) {
+/**
+#Definition of the analytic curve of the 0-level set function
+
+We trace a polyline with 2 points on the circular part and then add the last two
+points. Of course we start and end with the same point. Thus, we have properly
+defined a closed contour which can be used for the distance() function.
+
+*/
+  double theta_i = acos(sqrt(1-sq(0.025/0.15)));
+  double theta_f = 2.*Pi-theta_i;
+  double delta_theta = 0.5*2.*Pi/360.;
+  double theta;
+
+  
+  Array * h = array_new();
+  {
+    coord A = {0.525,0625} ;
+    array_append(h, &A,sizeof(coord));
+  }
+  // for(theta=theta_i; theta<theta_f; theta+=delta_theta){
+  //   coord A = {0.5  + 0.15*sin(theta),0.75 - 0.15*cos(theta)};
+  //   array_append(h, &A,sizeof(coord));
+  // }
+
+  {
+    coord A = {0.475, 0.625} ; 
+    array_append(h, &A,sizeof(coord));
+  }
+
+  {
+    coord A = {0.475, 0.85}; 
+    array_append(h, &A,sizeof(coord));
+  }
+
+  {
+    coord A = {0.525, 0.85} ; 
+    array_append(h, &A,sizeof(coord));
+  }
+  {
+    coord A = {0.525, 0.625} ; 
+    array_append(h, &A,sizeof(coord));
+  }
+  // and last but not least
+  {
+    coord p = {nodata};
+    array_append(h, &p, sizeof(coord));
+  }
+  return (coord *) array_shrink(h);
+}
+
 int MAXLEVEL;
 
 /**
@@ -58,11 +109,12 @@ compute the corresponding volume fraction field. */
 event init (i = 0) {
   DT = T/(1280*Nb_tour);
   NB_width = L0*nb_cell_NB / (1<<MAXLEVEL);
-
-  coord * p = input_xy (fopen ("zalesak.gnu", "r"));
-
+  coord * p = ZalesakCurve();
   scalar d[];
+
   distance (d, p);
+  boundary({d});
+
   // while (adapt_wavelet ({d}, (double[]){1e-3}, MAXLEVEL+2).nf);
 
 
