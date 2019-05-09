@@ -207,8 +207,7 @@ event LS_reinitialization(i+=4,last){
 We output the interfaces of the vof variable.
 */
 event shape (t = {0,T}) {
-  if (N == (1<<N_display))
-    output_facets (f);
+  if (N == N_display) output_facets (f);
 }
 
 /**
