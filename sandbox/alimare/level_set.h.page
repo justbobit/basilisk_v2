@@ -18,7 +18,7 @@ extern double dt;
 /**
 The integration is performed using the Bell-Collela-Glaz scheme. */
 #include "bcg.h"
-#include "../sandbox/alimare/alex_functions.h"
+#include "alex_functions.h"
 event LS_advection (i++,last) {
   // printf("%d \n", i);
   advection (level_set, uf, dt);
