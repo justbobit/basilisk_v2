@@ -1,3 +1,3 @@
-CFLAGS +=  -fopenmp -O2
+CFLAGS += -O2
 
 include $(BASILISK)/Makefile.defs
