@@ -49,39 +49,46 @@ defined a closed contour which can be used for the distance() function.
   double delta_theta = 0.5*2.*Pi/360.;
   double theta;
 
+  coord A = {0.525, 0.625};
+  coord B = {0.475, 0.625};
+  coord C = {0.475, 0.85};
+  coord D = {0.525, 0.85};
   
   Array * h = array_new();
   {
-    coord A = {0.525,0625} ;
-    array_append(h, &A,sizeof(coord));
-  }
-  // for(theta=theta_i; theta<theta_f; theta+=delta_theta){
-  //   coord A = {0.5  + 0.15*sin(theta),0.75 - 0.15*cos(theta)};
-  //   array_append(h, &A,sizeof(coord));
-  // }
-
-  {
-    coord A = {0.475, 0.625} ; 
-    array_append(h, &A,sizeof(coord));
+    coord toto = {A.x,A.y} ;
+    array_append(h, &toto,sizeof(coord));
   }
 
+  for(theta=theta_i; theta<theta_f; theta+=delta_theta){
+    double xx = 0.5  + 0.15*sin(theta);
+    double yy = 0.75 - 0.15*cos(theta);
+    coord toto = {xx,yy};
+    array_append(h, &toto,sizeof(coord));
+  }
+
+  {  
+    coord toto = {B.x, B.y};
+    array_append(h, &toto, sizeof(coord));
+  }
   {
-    coord A = {0.475, 0.85}; 
-    array_append(h, &A,sizeof(coord));
+    coord toto = {C.x, C.y};
+    array_append(h, &toto, sizeof(coord));
+  }
+  
+  {
+    coord toto = {D.x, D.y};
+    array_append(h, &toto, sizeof(coord));
   }
 
   {
-    coord A = {0.525, 0.85} ; 
-    array_append(h, &A,sizeof(coord));
-  }
-  {
-    coord A = {0.525, 0.625} ; 
-    array_append(h, &A,sizeof(coord));
+    coord toto = {A.x, A.y};
+    array_append(h, &toto, sizeof(coord));
   }
   // and last but not least
   {
-    coord p = {nodata};
-    array_append(h, &p, sizeof(coord));
+    coord toto = {nodata};
+    array_append(h, &toto, sizeof(coord));
   }
   return (coord *) array_shrink(h);
 }
