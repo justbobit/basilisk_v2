@@ -16,7 +16,7 @@ scheme. */
 #include "tag.h"
 #include "advection.h"
 #include "vof.h"
-#include "../sandbox/alimare/level_set.h"
+#include "../level_set.h"
 #define Pi 3.141592653589793
 #define Nb_tour 2
 #define T 2*Nb_tour*3.14
