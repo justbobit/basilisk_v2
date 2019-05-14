@@ -50,7 +50,7 @@ double geometry(double x, double y) {
   /**
   The difference of two geometry $G_1$ and $G_2$ is $G_1-G_2 = max(G1,-G2)$,
   therefore, we have: */
-  double zalesak = max (s, -r);
+  double zalesak = difference(s,r) ;
 
   return zalesak;
 }
