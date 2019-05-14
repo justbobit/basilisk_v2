@@ -1,0 +1,171 @@
+/**
+# Bénard–von Kármán Vortex Street for flow around a cylinder at Re=160
+
+An example of 2D viscous flow around a simple solid boundary. Fluid is
+injected to the left of a channel bounded by solid walls with a slip
+boundary condition. A passive tracer is injected in the bottom half of
+the inlet.
+
+![Animation of the vorticity field.](karman/vort.mp4)(loop)
+
+![Animation of the tracer field.](karman/f.mp4)(loop)
+
+We use the centered Navier-Stokes solver, with embedded boundaries and
+advect the passive tracer *f*. */
+
+#include "embed.h"
+#include "navier-stokes/centered.h"
+// #include "navier-stokes/perfs.h"
+#include "tracer.h"
+
+scalar f[];
+scalar * tracers = {f};
+face vector muv[];
+
+double rectangle(double x, double y, coord center, coord size) {
+
+  double P1_Plus = x - size.x/2.  - center.x;
+  double P1_Minus = x + size.x/2. - center.x;
+  double P1 = max (P1_Plus, -P1_Minus);
+
+  double P2_Plus = y - size.y/2.  - center.y;
+  double P2_Minus = y + size.y/2. - center.y;
+  double P2 = max (P2_Plus, -P2_Minus);
+
+  double c = max ( P1,P2 );
+  return c;
+}
+
+double circle(double x, double y,  coord center, double radius) {
+  return ( sq(x - center.x) + sq (y - center.y) - sq (radius));
+}
+
+double geometry(double x, double y) {
+
+  coord center_circle, center_rectangle, size_rectangle;
+  center_circle.x = 0.;
+  center_circle.y = 0.;
+
+  center_rectangle.x = -0.02;
+  center_rectangle.y =  -0.08;
+
+  size_rectangle.x = 0.05;
+  size_rectangle.y = 0.13; 
+
+  double s = circle (x, y, center_circle, 0.125);
+  double r = rectangle (x, y, center_rectangle, size_rectangle);
+
+  /**
+  The difference of two geometry $G_1$ and $G_2$ is $G_1-G_2 = max(G1,-G2)$,
+  therefore, we have: */
+  double zalesak = difference (s , r);
+
+  return zalesak;
+}
+
+/**
+The domain is eight units long, centered vertically. */
+
+int main() {
+  L0 = 8.;
+  origin (-0.5, -L0/2.);
+  N = 512;
+  mu = muv;
+  run(); 
+}
+
+/**
+We set a constant viscosity corresponding to a Reynolds number of 160,
+based on the cylinder diameter (0.125) and the inflow velocity (1). */
+
+event properties (i++)
+{
+  foreach_face()
+    muv.x[] = fm.x[]*0.125/160.;
+}
+
+/**
+The fluid is injected on the left boundary with a unit velocity. The
+tracer is injected in the lower-half of the left boundary. An outflow
+condition is used on the right boundary. */
+
+u.n[left]  = dirichlet(1.);
+p[left]    = neumann(0.);
+pf[left]   = neumann(0.);
+f[left]    = dirichlet(y < 0);
+
+u.n[right] = neumann(0.);
+p[right]   = dirichlet(0.);
+pf[right]  = dirichlet(0.);
+
+/**
+The top and bottom walls are free-slip and the cylinder is no-slip. */
+
+u.n[embed] = fabs(y) > 0.25 ? neumann(0.) : dirichlet(0.);
+u.t[embed] = fabs(y) > 0.25 ? neumann(0.) : dirichlet(0.);
+
+event init (t = 0)
+{
+
+  /**
+  The domain is the intersection of a channel of width unity and a
+  circle of diameter 0.125. */
+
+  vertex scalar phi[];
+  foreach_vertex() {
+    phi[] = geometry(x,y);
+  }
+  boundary ({phi});
+  fractions (phi, cs, fs);
+
+  /**
+  We set the initial velocity field. */
+  
+  foreach()
+    u.x[] = cs[] ? 1. : 0.;
+    scalar l[];
+    foreach()
+      l[] = cs[];
+    output_ppm (cs, file = "f_init.png", n = 1024,
+     box = {{-0.5,-0.5},{7.5,0.5}});
+}
+
+/**
+We check the number of iterations of the Poisson and viscous
+problems. */
+
+event logfile (i++)
+  fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
+
+/**
+We produce animations of the vorticity and tracer fields... */
+
+event movies (i += 4; t <= 15.)
+{
+
+  scalar omega[], m[];
+  vorticity (u, omega);
+  foreach()
+    m[] = cs[] - 0.5;
+  boundary ({m});
+  // output_ppm (omega, file = "vort.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
+  //       n = 800,
+	 //      min = -10, max = 10, linear = true, mask = m);
+  output_ppm (f, file = "f.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
+        n = 800,
+	      linear = false, min = 0, max = 1, mask = m);
+}
+
+/**
+We adapt according to the error on the embedded geometry, velocity and
+tracer fields. */
+
+event adapt (i++) {
+  adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 9, 4);
+}
+
+/**
+## See also
+
+* [Same example with Gerris](http://gerris.dalembert.upmc.fr/gerris/examples/examples/cylinder.html)
+*/
