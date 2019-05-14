@@ -15,11 +15,14 @@ advect the passive tracer *f*. */
 
 #include "embed.h"
 #include "navier-stokes/centered.h"
+#include "../level_set.h"
 // #include "navier-stokes/perfs.h"
 #include "tracer.h"
 
 scalar f[];
 scalar * tracers = {f};
+scalar * level_set = NULL;
+
 face vector muv[];
 
 double rectangle(double x, double y, coord center, coord size) {
@@ -40,7 +43,7 @@ double circle(double x, double y,  coord center, double radius) {
   return ( sq(x - center.x) + sq (y - center.y) - sq (radius));
 }
 
-double geometry(double x, double y) {
+double geometry(double x, double y, double Radius) {
 
   coord center_circle, center_rectangle, size_rectangle;
   center_circle.x = 0.;
@@ -52,7 +55,7 @@ double geometry(double x, double y) {
   size_rectangle.x = 0.05;
   size_rectangle.y = 0.13; 
 
-  double s = circle (x, y, center_circle, 0.125);
+  double s = circle (x, y, center_circle, Radius);
   double r = rectangle (x, y, center_rectangle, size_rectangle);
 
   /**
@@ -113,7 +116,7 @@ event init (t = 0)
 
   vertex scalar phi[];
   foreach_vertex() {
-    phi[] = geometry(x,y);
+    phi[] = geometry(x,y,0.0625);
   }
   boundary ({phi});
   fractions (phi, cs, fs);
@@ -137,10 +140,28 @@ problems. */
 event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
+
+event LS_reinitialization(t+=1.,last){
+  if(i>0){
+    vertex scalar phi[];
+    foreach_vertex() {
+      phi[] = geometry(x,y,0.0625+0.01*t);
+    }
+    boundary ({phi});
+    fractions (phi, cs, fs);
+
+    /**
+    We set the initial velocity field. */
+    
+    foreach()
+      u.x[] = cs[] ? cs[] : 0.; 
+  }
+}
+
 /**
 We produce animations of the vorticity and tracer fields... */
 
-event movies (i += 4; t <= 15.)
+event movies (i += 8; t <= 10.)
 {
 
   scalar omega[], m[];
