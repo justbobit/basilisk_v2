@@ -141,20 +141,70 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-event LS_reinitialization(t+=1.,last){
+event LS_reinitialization(t+=2.,last){
   if(i>0){
+
+  // metric update part
+    foreach()
+      cs[] = 1.;
+    foreach_face()
+      fs.x[] = 1.;
+
+  #if TREE
+    cs.refine = embed_fraction_refine;
+
+    /**
+    For prolongation we cannot use the same function since the surface
+    fraction field *fs* is not necessarily defined for prolongation
+    cells. So we switch back to the default fraction refinement (which
+    is less accurate but only relies on *cs*). */
+
+    cs.prolongation = fraction_refine;
+    foreach_dimension()
+      fs.x.prolongation = embed_face_fraction_refine_x;
+    
+    /**
+    Note that we do not need to change the `refine` method since the
+    default `refine` method calls the prolongation method for each
+    component. */
+    
+  #endif
+    boundary ({cs, fs});
+    restriction ({cs, fs});
+
+    // fixme: embedded boundaries cannot be combined with (another) metric yet
+    assert (is_constant (cm) || cm.i == cs.i);
+    
+    cm = cs;
+    fm = fs;
+
     vertex scalar phi[];
     foreach_vertex() {
       phi[] = geometry(x,y,0.0625+0.01*t);
     }
     boundary ({phi});
     fractions (phi, cs, fs);
-
+    output_ppm (cs, file = "f_init2.png", n = 1024,
+     box = {{-0.5,-0.5},{7.5,0.5}});
     /**
-    We set the initial velocity field. */
+    We set the velocity field in the covered cells. */
     
     foreach()
       u.x[] = cs[] ? cs[] : 0.; 
+    boundary ((scalar *){u});
+    trash ({uf});
+    foreach_face()
+      uf.x[] = fm.x[]*face_value (u.x, 0);
+    boundary ((scalar *){uf});
+
+    /**
+    We update fluid properties. */
+
+    event ("properties");
+
+    dtmax = DT;
+    event ("stability");
+
   }
 }
 
