@@ -13,7 +13,7 @@ Zalesak's test case) with growing radius. There is no proper treatment for the
 growth of the radius (no physical conditions) and the velocity field is poorly
 updated (set to $0$ in the newly covered cells).
 
-![Animation tracer field.](embed_test/f.gif)(loop)
+![Animation tracer field.](update/f.gif)(loop)
 */
 
 #include "embed.h"
