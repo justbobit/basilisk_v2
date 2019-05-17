@@ -187,8 +187,6 @@ event LS_reinitialization(t+=2.,last){
     }
     boundary ({phi});
     fractions (phi, cs, fs);
-    output_ppm (cs, file = "f_init2.png", n = 1024,
-     box = {{-0.5,-0.5},{7.5,0.5}});
     /**
     We set the velocity field in the covered cells. */
     
@@ -212,7 +210,7 @@ event LS_reinitialization(t+=2.,last){
 }
 
 /**
-We produce animations of the vorticity and tracer fields... */
+We produce an animation of the tracer field. */
 
 event movies (i += 8; t <= 10.)
 {
@@ -223,8 +221,7 @@ event movies (i += 8; t <= 10.)
     m[] = cs[] - 0.5;
   boundary ({m});
   output_ppm (f, file = "f.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
-        n = 800,
-	      linear = false, min = 0, max = 1, mask = m);
+        n = 800,linear = false, min = 0, max = 1, mask = m);
 }
 
 /**
