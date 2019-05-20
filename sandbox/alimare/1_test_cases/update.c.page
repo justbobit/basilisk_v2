@@ -127,13 +127,16 @@ event init (t = 0)
   /**
   We set the initial velocity field. */
   
+  foreach(){
+    double theta = atan2(y, x), r = sqrt(x*x + y*y);
+    u.x[] = cs[] ? 1. : r*cos(theta);
+    u.y[] = cs[] ? 0. : r*sin(theta);
+  }
+  scalar l[];
   foreach()
-    u.x[] = cs[] ? 1. : 0.;
-    scalar l[];
-    foreach()
-      l[] = cs[];
-    output_ppm (cs, file = "f_init.png", n = 1024,
-     box = {{-0.5,-0.5},{7.5,0.5}});
+    l[] = cs[];
+  output_ppm (cs, file = "f_init.png", n = 1024,
+   box = {{-0.5,-0.5},{7.5,0.5}});
 }
 
 /**
