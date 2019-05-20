@@ -119,7 +119,7 @@ event init (t = 0)
 
   vertex scalar phi[];
   foreach_vertex() {
-    phi[] = geometry(x,y,0.0625);
+    phi[] = geometry(x,y,0.13);
   }
   boundary ({phi});
   fractions (phi, cs, fs);
@@ -147,70 +147,70 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-event LS_reinitialization(t+=2.,last){
-  if(i>0){
+// event LS_reinitialization(t+=2.,last){
+//   if(i>0){
 
-  // metric update part
-    foreach()
-      cs[] = 1.;
-    foreach_face()
-      fs.x[] = 1.;
+//   // metric update part
+//     foreach()
+//       cs[] = 1.;
+//     foreach_face()
+//       fs.x[] = 1.;
 
-  #if TREE
-    cs.refine = embed_fraction_refine;
+//   #if TREE
+//     cs.refine = embed_fraction_refine;
 
-    /**
-    For prolongation we cannot use the same function since the surface
-    fraction field *fs* is not necessarily defined for prolongation
-    cells. So we switch back to the default fraction refinement (which
-    is less accurate but only relies on *cs*). */
+//     /**
+//     For prolongation we cannot use the same function since the surface
+//     fraction field *fs* is not necessarily defined for prolongation
+//     cells. So we switch back to the default fraction refinement (which
+//     is less accurate but only relies on *cs*). */
 
-    cs.prolongation = fraction_refine;
-    foreach_dimension()
-      fs.x.prolongation = embed_face_fraction_refine_x;
+//     cs.prolongation = fraction_refine;
+//     foreach_dimension()
+//       fs.x.prolongation = embed_face_fraction_refine_x;
     
-    /**
-    Note that we do not need to change the `refine` method since the
-    default `refine` method calls the prolongation method for each
-    component. */
+//     /**
+//     Note that we do not need to change the `refine` method since the
+//     default `refine` method calls the prolongation method for each
+//     component. */
     
-  #endif
-    boundary ({cs, fs});
-    restriction ({cs, fs});
+//   #endif
+//     boundary ({cs, fs});
+//     restriction ({cs, fs});
 
-    // fixme: embedded boundaries cannot be combined with (another) metric yet
-    assert (is_constant (cm) || cm.i == cs.i);
+//     // fixme: embedded boundaries cannot be combined with (another) metric yet
+//     assert (is_constant (cm) || cm.i == cs.i);
     
-    cm = cs;
-    fm = fs;
+//     cm = cs;
+//     fm = fs;
 
-    vertex scalar phi[];
-    foreach_vertex() {
-      phi[] = geometry(x,y,0.0625+0.01*t);
-    }
-    boundary ({phi});
-    fractions (phi, cs, fs);
-    /**
-    We set the velocity field in the covered cells. */
+//     vertex scalar phi[];
+//     foreach_vertex() {
+//       phi[] = geometry(x,y,0.0625+0.01*t);
+//     }
+//     boundary ({phi});
+//     fractions (phi, cs, fs);
+//     /**
+//     We set the velocity field in the covered cells. */
     
-    foreach()
-      u.x[] = cs[] ? cs[] : 0.; 
-    boundary ((scalar *){u});
-    trash ({uf});
-    foreach_face()
-      uf.x[] = fm.x[]*face_value (u.x, 0);
-    boundary ((scalar *){uf});
+//     foreach()
+//       u.x[] = cs[] ? cs[] : 0.; 
+//     boundary ((scalar *){u});
+//     trash ({uf});
+//     foreach_face()
+//       uf.x[] = fm.x[]*face_value (u.x, 0);
+//     boundary ((scalar *){uf});
 
-    /**
-    We update fluid properties. */
+//     /**
+//     We update fluid properties. */
 
-    event ("properties");
+//     event ("properties");
 
-    dtmax = DT;
-    event ("stability");
+//     dtmax = DT;
+//     event ("stability");
 
-  }
-}
+//   }
+// }
 
 /**
 We produce an animation of the tracer field. */
@@ -223,8 +223,10 @@ event movies (i += 8; t <= 10.)
   foreach()
     m[] = cs[] - 0.5;
   boundary ({m});
-  output_ppm (f, file = "f.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
-        n = 800,linear = false, min = 0, max = 1, mask = m);
+  output_ppm (omega, file = "vort.gif", box = {{-0.5,-2.},{7.5,2.}},
+        min = -10, max = 10, linear = true);
+  output_ppm (f, file = "f.gif", box = {{-0.5,-2.},{7.5,2.}}, 
+        n = 800,linear = false, min = 0, max = 1);
 }
 
 /**
