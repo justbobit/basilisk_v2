@@ -1,17 +1,20 @@
 /**
-# Bénard–von Kármán Vortex Street for flow around a cylinder at Re=160
+#Update embed-boundary
 
-An example of 2D viscous flow around a simple solid boundary. Fluid is
-injected to the left of a channel bounded by solid walls with a slip
-boundary condition. A passive tracer is injected in the bottom half of
-the inlet.
-
-![Animation of the vorticity field.](karman/vort.mp4)(loop)
-
-![Animation of the tracer field.](karman/f.mp4)(loop)
+First test case where i update the embedded boundary. Based on the example of
+the Bénard–von Kármán Vortex Street for flow around a cylinder at Re=160.
 
 We use the centered Navier-Stokes solver, with embedded boundaries and
-advect the passive tracer *f*. */
+advect the passive tracer *f*. 
+
+I combined the `metric` event from the embed.h and the `init` event of
+centered.h in the `LS_reinit`. Here the geometry is a notched disk (inspired by
+Zalesak's test case) with growing radius. There is no proper treatment for the
+growth of the radius (no physical conditions) and the velocity field is poorly
+updated (set to $0$ in the newly covered cells).
+
+![Animation tracer field.](update/f.gif)(loop)
+*/
 
 #include "embed.h"
 #include "navier-stokes/centered.h"
@@ -141,25 +144,73 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-event LS_reinitialization(t+=1.,last){
+event LS_reinitialization(t+=2.,last){
   if(i>0){
+
+  // metric update part
+    foreach()
+      cs[] = 1.;
+    foreach_face()
+      fs.x[] = 1.;
+
+  #if TREE
+    cs.refine = embed_fraction_refine;
+
+    /**
+    For prolongation we cannot use the same function since the surface
+    fraction field *fs* is not necessarily defined for prolongation
+    cells. So we switch back to the default fraction refinement (which
+    is less accurate but only relies on *cs*). */
+
+    cs.prolongation = fraction_refine;
+    foreach_dimension()
+      fs.x.prolongation = embed_face_fraction_refine_x;
+    
+    /**
+    Note that we do not need to change the `refine` method since the
+    default `refine` method calls the prolongation method for each
+    component. */
+    
+  #endif
+    boundary ({cs, fs});
+    restriction ({cs, fs});
+
+    // fixme: embedded boundaries cannot be combined with (another) metric yet
+    assert (is_constant (cm) || cm.i == cs.i);
+    
+    cm = cs;
+    fm = fs;
+
     vertex scalar phi[];
     foreach_vertex() {
       phi[] = geometry(x,y,0.0625+0.01*t);
     }
     boundary ({phi});
     fractions (phi, cs, fs);
-
     /**
-    We set the initial velocity field. */
+    We set the velocity field in the covered cells. */
     
     foreach()
       u.x[] = cs[] ? cs[] : 0.; 
+    boundary ((scalar *){u});
+    trash ({uf});
+    foreach_face()
+      uf.x[] = fm.x[]*face_value (u.x, 0);
+    boundary ((scalar *){uf});
+
+    /**
+    We update fluid properties. */
+
+    event ("properties");
+
+    dtmax = DT;
+    event ("stability");
+
   }
 }
 
 /**
-We produce animations of the vorticity and tracer fields... */
+We produce an animation of the tracer field. */
 
 event movies (i += 8; t <= 10.)
 {
@@ -169,12 +220,8 @@ event movies (i += 8; t <= 10.)
   foreach()
     m[] = cs[] - 0.5;
   boundary ({m});
-  // output_ppm (omega, file = "vort.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
-  //       n = 800,
-	 //      min = -10, max = 10, linear = true, mask = m);
   output_ppm (f, file = "f.gif", box = {{-0.5,-0.5},{7.5,0.5}}, 
-        n = 800,
-	      linear = false, min = 0, max = 1, mask = m);
+        n = 800,linear = false, min = 0, max = 1, mask = m);
 }
 
 /**
@@ -186,7 +233,11 @@ event adapt (i++) {
 }
 
 /**
-## See also
+# Future work
 
-* [Same example with Gerris](http://gerris.dalembert.upmc.fr/gerris/examples/examples/cylinder.html)
+* Movement of the boundary must follow the movement of a physical quantity.
+Use the velocity field near the boundary to advect a level set function and use
+the 0-level set as the boundary for the embedded boundary.
+* Having calculations inside and outside of the circle. Then set a Dirichlet
+condition on it and use it for both calculations.
 */
