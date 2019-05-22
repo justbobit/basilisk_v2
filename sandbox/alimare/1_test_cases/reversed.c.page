@@ -12,7 +12,8 @@ scheme and the reinitialization function of the LS function. */
 
 #include "advection.h"
 #include "vof.h"
-#include "../sandbox/alimare/level_set.h"
+#include "../level_set.h"
+#include "basic_geom.h"
 
 /**
 The volume fraction is stored in scalar field `f` which is listed as
@@ -65,8 +66,12 @@ function `circle()` to define this interface.
 The period of the stretching cycle is set to 15, which will lead to
 strong stretching. Milder conditions can be obtained by decreasing it. */
 
-#define circle(x,y) (sq(0.2) - (sq(x + 0.2) + sq(y + .236338)))
+// #define circle2(x,y) (sq(0.2) - (sq(x + 0.2) + sq(y + .236338)))
 #define T 15.
+
+
+coord center_circle ={-0.2,-0.236338};
+double Radius   =  0.2;
 
 /**
 We define the auxiliary levelset function $\phi$ on each vertex of the grid and
@@ -78,9 +83,12 @@ clamp the distance due to our NB approach. We take a 2\% overshoot that prevents
 */
 
 event init (i = 0) {
-  fraction (f, circle(x,y));
+  fraction (f, circle(x,y,center_circle,Radius));
+
+
   foreach_vertex(){
-    dist[] = -clamp(circle(x,y), -1.02*NB_width, 1.02*NB_width);
+    dist[] = -clamp(circle(x,y,center_circle,Radius),
+     -1.02*NB_width, 1.02*NB_width);
   }
 
   if (N == (1<<N_display)) {
@@ -95,8 +103,8 @@ event init (i = 0) {
 
     foreach()
       l[] = dist[];
-    output_ppm (l, file = "dist_init.png", n = 400, min = -1.1*NB_width,
-     max=1.1 *NB_width);
+    output_ppm (l, file = "dist_init.png", n = 400, min = -0.1*NB_width,
+      max = 0.1*NB_width);
   }
 
 
@@ -160,17 +168,22 @@ Note that the error of the level set function is only studied in half of the NB 
 
 event field (t = T) {
   scalar e[], e2[];
-  fraction (e, circle(x,y));
+  fraction (e, circle(x,y,center_circle,Radius));
   foreach_vertex()
-    e2[] = -circle(x,y);
+    e2[] = -circle(x,y,center_circle,Radius);
   foreach(){
     e[]  -= f[];
-    e2[] -= fabs(dist[])< 0.5*NB_width ? dist[] : e2[];
+    e2[] -= fabs(e2[])< NB_width ? dist[] : e2[];
   }
   norm n  = normf (e);
   norm n2 = normf (e2);
   fprintf (stderr, "%d %g %g %g %g %g %g\n", N, n.avg, n.rms, n.max, 
             n2.avg, n2.rms, n2.max);
+  scalar l[];
+    foreach()
+      l[] = dist[];
+    output_ppm (l, file = "dist_final.png", n = 400,min = -0.1*NB_width,
+      max = 0.1*NB_width);
 }
 
 /**
@@ -238,7 +251,7 @@ event levels2 (t += T/300){
     foreach()
       l[] = dist[];
     output_ppm (l, file = "dist2.gif", n = 400, 
-      opt = "--delay 1",min = -0.25*NB_width, max=0.25*NB_width);
+      opt = "--delay 1",min = -0.33*NB_width, max=0.33*NB_width);
   }
 }
 
@@ -249,9 +262,9 @@ the $NB_{width}$
 */
 
 event LS_reinitialization(i++,last){
-  if(i>15){
-    LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
-      1.4*(nb_cell_NB << 1));
+  if(i>0){
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width,
+      1.4*(nb_cell_NB));
   }
 }
 
@@ -316,5 +329,10 @@ set size ratio -1
 plot [-0.5:0.5][-0.5:0.5]'out' w l t "adaptive"
 ~~~
 
-![Animation of the level set function](reversed/dist2.gif)(width="800" height="600") */
+![Animation of the level set function](reversed/dist2.gif)(width="800" height="600") 
 
+
+Initial Level set field    |  Final Level Set field
+:-------------------------:|:-------------------------:
+![Initial](reversed/dist_init.png)(width="400" height="300") |  ![Final](reversed/dist_final.png)(width="400" height="300")  
+*/
