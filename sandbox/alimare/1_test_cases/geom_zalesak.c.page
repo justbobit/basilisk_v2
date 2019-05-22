@@ -12,26 +12,8 @@ $$ Z = C - R $$
 #include "utils.h"
 #include "fractions.h"
 #include "distance.h"
+#include "../alex_functions.h"
 #define Pi 3.141592653589793
-
-
-double rectangle(double x, double y, coord center, coord size) {
-
-  double P1_Plus = x - size.x/2.  - center.x;
-  double P1_Minus = x + size.x/2. - center.x;
-  double P1 = max (P1_Plus, -P1_Minus);
-
-  double P2_Plus = y - size.y/2.  - center.y;
-  double P2_Minus = y + size.y/2. - center.y;
-  double P2 = max (P2_Plus, -P2_Minus);
-
-  double c = max ( P1,P2 );
-  return c;
-}
-
-double circle(double x, double y,  coord center, double radius) {
-  return ( sq(x - center.x) + sq (y - center.y) - sq (radius));
-}
 
 double geometry(double x, double y) {
 
@@ -44,12 +26,9 @@ double geometry(double x, double y) {
   size_rectangle.x = 0.05;
   size_rectangle.y = 0.25; 
 
-  double s = circle (x, y, center_circle, 0.15);
-  double r = rectangle (x, y, center_rectangle, size_rectangle);
+  double s = -circle (x, y, center_circle, 0.15);
+  double r = -rectangle (x, y, center_rectangle, size_rectangle);
 
-  /**
-  The difference of two geometry $G_1$ and $G_2$ is $G_1-G_2 = max(G1,-G2)$,
-  therefore, we have: */
   double zalesak = difference(s,r) ;
 
   return zalesak;
@@ -135,7 +114,7 @@ defined a closed contour which can be used for the distance() function.
 
   foreach()
     l[] = d[];
-  output_ppm (l, file = "dist_init.png", n = 800,min = -0.1, max = 0.1);
+  output_ppm (l, file = "dist_init.png", n = 800);
 }
 
 

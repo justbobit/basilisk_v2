@@ -367,7 +367,7 @@ operations. */
 
 #define intersection(a,b)   min(a,b)
 #define union(a,b)          max(a,b)
-#define difference(a,b)     max(a,-(b))
+#define difference(a,b)     min(a,-(b))
 
 /**
 ## Interface reconstruction from volume fractions
