@@ -21,6 +21,7 @@ updated (set to $0$ in the newly covered cells).
 #include "../level_set.h"
 // #include "navier-stokes/perfs.h"
 #include "tracer.h"
+#include "basic_geom.h"
 
 scalar f[];
 scalar * tracers = {f};
@@ -37,13 +38,14 @@ double geometry(double x, double y, double Radius) {
   center_rectangle.x = -0.02;
   center_rectangle.y =  -0.08;
 
-  size_rectangle.x = 0.05;
-  size_rectangle.y = 0.13; 
+  size_rectangle.x = 0.1;
+  size_rectangle.y = 0.3; 
 
-  double s = -circle (x, y, center_circle, Radius);
+  double s = circle (x, y, center_circle, Radius);
   double r = -rectangle (x, y, center_rectangle, size_rectangle);
 
-  double zalesak = difference (s , r);
+  // double zalesak = -difference (s , r);
+  double zalesak = -s;
 
   return zalesak;
 }
@@ -54,7 +56,7 @@ The domain is eight units long, centered vertically. */
 int main() {
   L0 = 8.;
   origin (-0.5, -L0/2.);
-  N = 512;
+  N = 1024;
   mu = muv;
   run(); 
 }
@@ -98,7 +100,7 @@ event init (t = 0)
 
   vertex scalar phi[];
   foreach_vertex() {
-    phi[] = geometry(x,y,0.13);
+    phi[] = -geometry(x,y,0.13);
   }
   boundary ({phi});
   fractions (phi, cs, fs);
@@ -126,12 +128,12 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-event LS_reinitialization(t+=2.,last){
+event LS_reinitialization(t+=0.1,last){
   if(i>0){
 
     vertex scalar phi[];
     foreach_vertex() {
-      phi[] = geometry(x,y,0.0625+0.01*t);
+      phi[] = -geometry(x,y,0.13+0.025*t);
     }
     boundary ({phi});
     fractions (phi, cs, fs);
@@ -160,7 +162,7 @@ event LS_reinitialization(t+=2.,last){
 /**
 We produce an animation of the tracer field. */
 
-event movies (i += 8; t <= 10.)
+event movies (i += 8; t <= 8.)
 {
 
   scalar omega[], m[];
@@ -171,7 +173,7 @@ event movies (i += 8; t <= 10.)
   output_ppm (omega, file = "vort.gif", box = {{-0.5,-2.},{7.5,2.}},
         min = -10, max = 10, linear = true);
   output_ppm (f, file = "f.gif", box = {{-0.5,-2.},{7.5,2.}}, 
-        n = 800,linear = false, min = 0, max = 1);
+        n = 800,linear = false, min = 0, max = 1, mask = m);
 }
 
 /**
