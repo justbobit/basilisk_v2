@@ -10,6 +10,7 @@ errors accumulated during advection.
 We will need the advection solver combined with the VOF advection
 scheme and the reinitialization function of the LS function. */
 
+#include "utils.h"
 #include "advection.h"
 #include "vof.h"
 #include "../level_set.h"
@@ -195,6 +196,21 @@ event shape (t += T/4.) {
     output_facets (f);
 }
 
+// event mass (t += T/50.) {
+//   if (N == (1<<N_display)){
+//     static FILE * fp3 = fopen ("out2","w");;
+//     scalar f2[];
+//     fractions (f2, dist);
+//     stats s = statsf(f2);
+//   /**
+//   We create a temporary VOF variable to calculate loss of mass during advection
+//   of the level set function */
+  
+
+//     fprintf(fp3,"%g %g\n", t,s.sum ); 
+//   }
+// }
+
 /**
 If we are using adaptivity, we also output the levels of refinement at
 maximum stretching. */
@@ -262,6 +278,21 @@ the $NB_{width}$
 */
 
 event LS_reinitialization(i++,last){
+
+  // WIP
+  // scalar norm_v[];
+  // foreach()
+  //   norm_v[] =  0.;
+
+  // foreach_face()
+  //   norm_v[] += sq(uf.x[]);
+
+  // stats s         = statsf(norm_v);
+  // d_max_advected += sqrt(s.max)*dt;
+  // if(d_max_advected > NB_width){
+  //    d_max_advected = 0.;
+  // END OF WIP
+
   if(i>0){
     LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width,
       1.4*(nb_cell_NB));
@@ -327,6 +358,15 @@ larger than those for $t=T$.
 reset
 set size ratio -1
 plot [-0.5:0.5][-0.5:0.5]'out' w l t "adaptive"
+~~~
+
+
+~~~gnuplot
+reset
+set yrange [0.123:0.127]
+plot 'out2' w l lw 3
+
+
 ~~~
 
 ![Animation of the level set function](reversed/dist2.gif)(width="800" height="600") 
