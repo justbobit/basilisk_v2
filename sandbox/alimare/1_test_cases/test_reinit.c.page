@@ -1,7 +1,7 @@
 #include "grid/cartesian.h"
 #include "advection.h"
 #include "../level_set.h"
-#include "../alex_functions.h"
+#include "../basic_geom.h"
 
 
 double NB_width;

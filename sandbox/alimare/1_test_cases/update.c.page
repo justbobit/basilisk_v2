@@ -40,12 +40,9 @@ double geometry(double x, double y, double Radius) {
   size_rectangle.x = 0.05;
   size_rectangle.y = 0.13; 
 
-  double s = circle (x, y, center_circle, Radius);
-  double r = rectangle (x, y, center_rectangle, size_rectangle);
+  double s = -circle (x, y, center_circle, Radius);
+  double r = -rectangle (x, y, center_rectangle, size_rectangle);
 
-  /**
-  The difference of two geometry $G_1$ and $G_2$ is $G_1-G_2 = max(G1,-G2)$,
-  therefore, we have: */
   double zalesak = difference (s , r);
 
   return zalesak;
@@ -129,70 +126,36 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-// event LS_reinitialization(t+=2.,last){
-//   if(i>0){
+event LS_reinitialization(t+=2.,last){
+  if(i>0){
 
-//   // metric update part
-//     foreach()
-//       cs[] = 1.;
-//     foreach_face()
-//       fs.x[] = 1.;
-
-//   #if TREE
-//     cs.refine = embed_fraction_refine;
-
-//     /**
-//     For prolongation we cannot use the same function since the surface
-//     fraction field *fs* is not necessarily defined for prolongation
-//     cells. So we switch back to the default fraction refinement (which
-//     is less accurate but only relies on *cs*). */
-
-//     cs.prolongation = fraction_refine;
-//     foreach_dimension()
-//       fs.x.prolongation = embed_face_fraction_refine_x;
+    vertex scalar phi[];
+    foreach_vertex() {
+      phi[] = geometry(x,y,0.0625+0.01*t);
+    }
+    boundary ({phi});
+    fractions (phi, cs, fs);
+    /**
+    We set the velocity field in the covered cells. */
     
-//     /**
-//     Note that we do not need to change the `refine` method since the
-//     default `refine` method calls the prolongation method for each
-//     component. */
-    
-//   #endif
-//     boundary ({cs, fs});
-//     restriction ({cs, fs});
+    foreach()
+      u.x[] = cs[] ? cs[] : 0.; 
+    boundary ((scalar *){u});
+    trash ({uf});
+    foreach_face()
+      uf.x[] = fm.x[]*face_value (u.x, 0);
+    boundary ((scalar *){uf});
 
-//     // fixme: embedded boundaries cannot be combined with (another) metric yet
-//     assert (is_constant (cm) || cm.i == cs.i);
-    
-//     cm = cs;
-//     fm = fs;
+    /**
+    We update fluid properties. */
 
-//     vertex scalar phi[];
-//     foreach_vertex() {
-//       phi[] = geometry(x,y,0.0625+0.01*t);
-//     }
-//     boundary ({phi});
-//     fractions (phi, cs, fs);
-//     /**
-//     We set the velocity field in the covered cells. */
-    
-//     foreach()
-//       u.x[] = cs[] ? cs[] : 0.; 
-//     boundary ((scalar *){u});
-//     trash ({uf});
-//     foreach_face()
-//       uf.x[] = fm.x[]*face_value (u.x, 0);
-//     boundary ((scalar *){uf});
+    event ("properties");
 
-//     /**
-//     We update fluid properties. */
+    dtmax = DT;
+    event ("stability");
 
-//     event ("properties");
-
-//     dtmax = DT;
-//     event ("stability");
-
-//   }
-// }
+  }
+}
 
 /**
 We produce an animation of the tracer field. */
