@@ -531,7 +531,7 @@ face vector uf_temp[];
   event("viscous_term");
   event("accelerationprojection");
   event("end_timestep");
-  event("adapt");
+  // event("adapt");
 
 // modify the fs , cs, copy the outer fields in the partially covered cells
 

@@ -130,36 +130,36 @@ event logfile (i++)
   fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
 
 
-event LS_reinitialization(i+=5,last){
-  if(i>1){
+// event LS_reinitialization(i+=5,last){
+//   if(i>1){
 
-    vertex scalar phi[];
-    foreach_vertex() {
-      phi[] = -geometry(x,y,0.13+0.025*t);
-    }
-    boundary ({phi});
-    fractions (phi, cs, fs);
-    /**
-    We set the velocity field in the covered cells. */
+//     vertex scalar phi[];
+//     foreach_vertex() {
+//       phi[] = -geometry(x,y,0.13+0.025*t);
+//     }
+//     boundary ({phi});
+//     fractions (phi, cs, fs);
+//     /**
+//     We set the velocity field in the covered cells. */
     
-    foreach()
-      u.x[] = cs[] ? cs[] : 0.; 
-    boundary ((scalar *){u});
-    trash ({uf});
-    foreach_face()
-      uf.x[] = fm.x[]*face_value (u.x, 0);
-    boundary ((scalar *){uf});
+//     foreach()
+//       u.x[] = cs[] ? cs[] : 0.; 
+//     boundary ((scalar *){u});
+//     trash ({uf});
+//     foreach_face()
+//       uf.x[] = fm.x[]*face_value (u.x, 0);
+//     boundary ((scalar *){uf});
 
-    /**
-    We update fluid properties. */
+//     /**
+//     We update fluid properties. */
 
-    event ("properties");
+//     event ("properties");
 
-    dtmax = DT;
-    event ("stability");
+//     dtmax = DT;
+//     event ("stability");
 
-  }
-}
+//   }
+// }
 
 /**
 We produce an animation of the tracer field. */
@@ -182,9 +182,9 @@ event movies (i += 1; i <= 8.)
 We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 
-event adapt (i++) {
-  adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 9, 4);
-}
+// event adapt (i++) {
+//   adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 9, 4);
+// }
 
 /**
 # Future work
