@@ -163,6 +163,7 @@ event defaults (i = 0)
 
 #if TREE
   uf.x.refine = refine_face_solenoidal;
+  uf2.x.refine = refine_face_solenoidal;
 
   /**
   When using [embedded boundaries](/src/embed.h), the restriction and
@@ -170,13 +171,16 @@ event defaults (i = 0)
 
 #if EMBED
   uf.x.refine = refine_face;
-  foreach_dimension()
+  uf2.x.refine = refine_face;
+  foreach_dimension(){
     uf.x.prolongation = refine_embed_face_x;
-  for (scalar s in {p, pf, u, g}) {
+    uf2.x.prolongation = refine_embed_face_x;
+  }
+  for (scalar s in {p, pf, u, g, p2, pf2, u2}) {
     s.restriction = restriction_embed_linear;
     s.refine = s.prolongation = refine_embed_linear;
   }
-  for (scalar s in {p, pf})
+  for (scalar s in {p, pf, p2, pf2})
     s.embed_gradient = pressure_embed_gradient;
 #endif // EMBED
 #endif // TREE
@@ -451,18 +455,6 @@ After mesh adaptation fluid properties need to be updated. When using
 [embedded boundaries](/src/embed.h) the fluid fractions and face
 fluxes need to be checked for inconsistencies. */
 
-#if TREE
-event adapt (i++,last) {
-#if EMBED
-  fractions_cleanup (cs, fs);
-  foreach_face()
-    if (uf.x[] && !fs.x[])
-      uf.x[] = 0.;
-  boundary ((scalar *){uf});
-#endif
-  event ("properties");
-}
-#endif
 
 #if LevelSet
 event LS_reinitialization(i++,last);
@@ -484,7 +476,7 @@ vector u_temp[], g_temp[];
 scalar pf_temp[];
 face vector uf_temp[];
   // modify the fs , cs, copy the inner fields in the partially covered cells
-  foreach(){
+  foreach_cell(){
     cs[]     = 1-cs[];
     // saved everywhere due to the adapt() function
     p_temp[] = p[] ;
@@ -531,12 +523,10 @@ face vector uf_temp[];
   event("viscous_term");
   event("accelerationprojection");
   event("end_timestep");
-  // event("adapt");
 
 // modify the fs , cs, copy the outer fields in the partially covered cells
 
-
-  foreach(){
+  foreach_cell(){
       cs[]     = 1-cs[];
       // saved everywhere due to the adapt() function
       p2[] = p[] ;
@@ -572,6 +562,20 @@ face vector uf_temp[];
 
   dtmax = DT;
   event ("stability");
+  // event("adapt");
+}
+#endif
+
+#if TREE
+event adapt (i++,last) {
+#if EMBED
+  fractions_cleanup (cs, fs);
+  foreach_face()
+    if (uf.x[] && !fs.x[])
+      uf.x[] = 0.;
+  boundary ((scalar *){uf});
+#endif
+  event ("properties");
 }
 #endif
 

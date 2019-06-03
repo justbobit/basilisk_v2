@@ -19,7 +19,7 @@ updated (set to $0$ in the newly covered cells).
 #define DOUBLE_EMBED 1
 
 #include "embed.h"
-#include "centered_alex.h"
+#include "../centered_alex.h"
 #include "../level_set.h"
 // #include "navier-stokes/perfs.h"
 #include "tracer.h"
