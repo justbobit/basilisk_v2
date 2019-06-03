@@ -37,17 +37,17 @@ double geometry(double x, double y, double Radius) {
   center_circle.x = 0.;
   center_circle.y = 0.;
 
-  center_rectangle.x = -0.02;
-  center_rectangle.y =  -0.08;
+  center_rectangle.x = -0.0;
+  center_rectangle.y =  -0.5;
 
-  size_rectangle.x = 0.1;
-  size_rectangle.y = 0.3; 
+  size_rectangle.x = 0.5;
+  size_rectangle.y = 1.2; 
 
   double s = circle (x, y, center_circle, Radius);
   double r = -rectangle (x, y, center_rectangle, size_rectangle);
 
-  // double zalesak = -difference (s , r);
-  double zalesak = -s;
+  double zalesak = -difference (s , r);
+  // double zalesak = -s;
 
   return zalesak;
 }
@@ -57,8 +57,8 @@ The domain is eight units long, centered vertically. */
 
 int main() {
   L0 = 8.;
-  origin (-0.5, -L0/2.);
-  N = 1024;
+  origin (-1.5, -L0/2.);
+  N = 512;
   mu = muv;
   run(); 
 }
@@ -90,8 +90,8 @@ pf[right]  = dirichlet(0.);
 /**
 The top and bottom walls are free-slip and the cylinder is no-slip. */
 
-u.n[embed] = fabs(y) > 0.25 ? neumann(0.) : dirichlet(0.);
-u.t[embed] = fabs(y) > 0.25 ? neumann(0.) : dirichlet(0.);
+u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
+u.t[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
 
 event init (t = 0)
 {
@@ -102,7 +102,7 @@ event init (t = 0)
 
   vertex scalar phi[];
   foreach_vertex() {
-    phi[] = -geometry(x,y,0.13);
+    phi[] = -geometry(x,y,1.);
   }
   boundary ({phi});
   fractions (phi, cs, fs);
@@ -112,14 +112,17 @@ event init (t = 0)
   
   foreach(){
     double theta = atan2(y, x), r = sqrt(x*x + y*y);
-    u.x[] = cs[] ? 1. : r*cos(theta);
-    u.y[] = cs[] ? 0. : r*sin(theta);
+    u.x[]  = cs[] ? 1.           : 0;
+    // u2.x[] = cs[] ? r*cos(theta) : 0.;
+    u.y[]  = 0.;
+    // u2.y[] = cs[] ? r*sin(theta) : 0.;
   }
+  boundary ((scalar *){u,u2});
   scalar l[];
   foreach()
     l[] = cs[];
   output_ppm (cs, file = "f_init.png", n = 1024,
-   box = {{-0.5,-0.5},{7.5,0.5}});
+   box = {{-2,-2.},{2.,2.}});
 }
 
 /**
@@ -164,27 +167,37 @@ event logfile (i++)
 /**
 We produce an animation of the tracer field. */
 
-event movies (i += 1; i <= 8.)
+event movies (t += 0.05; t <= 5.0)
 {
 
-  scalar omega[], m[];
+  scalar omega[], m[],m2[],m3[];
   vorticity (u, omega);
-  foreach()
-    m[] = cs[] - 0.5;
+  foreach(){
+    m[] = 0., m2[] = 0. , m3[] =0.;
+    foreach_dimension()
+      m[] += cs[]*sq(u.x[]) + (1-cs[])*sq(u2.x[]);
+      m2[] += cs[]*sq(u.x[]) ;
+      m3[] += (1-cs[])*sq(u2.x[]);
+    m[] = sqrt(m[]);
+  }
   boundary ({m});
-  output_ppm (omega, file = "vort.gif", box = {{-0.5,-2.},{7.5,2.}},
-        min = -10, max = 10, linear = true);
-  output_ppm (f, file = "f.gif", box = {{-0.5,-2.},{7.5,2.}}, 
-        n = 800,linear = false, min = 0, max = 1, mask = m);
+  output_ppm (m, file = "vort.gif", box = {{-2,-2.},{2.,2.}},
+        linear = true);
+  output_ppm (m2, file = "vort2.gif", box = {{-2,-2.},{2.,2.}},
+        linear = true);
+  output_ppm (m3, file = "vort3.gif", box = {{-2,-2.},{2.,2.}},
+        linear = true);
+  // output_ppm (f, file = "f.gif", box = {{-2.,-2.},{2.,2.}}, 
+  //       n = 800,linear = false, min = 0, max = 1, mask = m);
 }
 
 /**
 We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 
-// event adapt (i++) {
-//   adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 9, 4);
-// }
+event adapt (i++) {
+  adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 9, 4);
+}
 
 /**
 # Future work
