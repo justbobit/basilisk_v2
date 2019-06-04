@@ -163,7 +163,6 @@ event defaults (i = 0)
 
 #if TREE
   uf.x.refine = refine_face_solenoidal;
-  uf2.x.refine = refine_face_solenoidal;
 
   /**
   When using [embedded boundaries](/src/embed.h), the restriction and
@@ -171,16 +170,14 @@ event defaults (i = 0)
 
 #if EMBED
   uf.x.refine = refine_face;
-  uf2.x.refine = refine_face;
   foreach_dimension(){
     uf.x.prolongation = refine_embed_face_x;
-    uf2.x.prolongation = refine_embed_face_x;
   }
-  for (scalar s in {p, pf, u, g, p2, pf2, u2}) {
+  for (scalar s in {p, pf, u, g}) {
     s.restriction = restriction_embed_linear;
     s.refine = s.prolongation = refine_embed_linear;
   }
-  for (scalar s in {p, pf, p2, pf2})
+  for (scalar s in {p, pf})
     s.embed_gradient = pressure_embed_gradient;
 #endif // EMBED
 #endif // TREE
@@ -211,6 +208,27 @@ event init (i = 0)
 
   dtmax = DT;
   event ("stability");
+#if DOUBLE_EMBED  
+  foreach(){
+    p2[]      = p[] ;
+    pf2[]     = pf[];
+
+    foreach_dimension(){
+      u2.x[]     = u.x[];
+      g2.x[]     = g.x[];
+    }
+  }
+
+  foreach_face(){
+    uf2.x[]     = uf.x[];
+  }
+  boundary({p2,pf2});
+  boundary((scalar *){u2,g2,uf2});
+  restriction({p2,pf2});
+  restriction((scalar *) {u2,g2,uf2});
+
+#endif
+  
 }
 
 /**
@@ -475,81 +493,40 @@ scalar p_temp[];
 vector u_temp[], g_temp[];
 scalar pf_temp[];
 face vector uf_temp[];
-  // modify the fs , cs, copy the inner fields in the partially covered cells
-  foreach_cell(){
-    cs[]     = 1-cs[];
-    // saved everywhere due to the adapt() function
-    p_temp[] = p[] ;
-    p[]      = p2[] ;
-    
-    pf_temp[] = pf[];
-    pf[]      = pf2[];
-
-
-    foreach_dimension(){
-      u_temp.x[] = u.x[];
-      u.x[]      = u2.x[];
-      g_temp.x[] = g.x[];
-      g.x[]      = g2.x[];
-    }
-  }
-
-  foreach_face(){
-    fs.x[] = 1.-fs.x[];
-    uf_temp.x[] = uf.x[];
-    uf.x[] = uf2.x[];
-  }
-  // we reset the properties due to the change of fs and cs
-
-  boundary ((scalar *){u});
-  trash ({uf});
-  foreach_face()
-    uf.x[] = fm.x[]*face_value (u.x, 0);
-  boundary ((scalar *){uf});
-
-  event ("properties");
-
-  dtmax = DT;
-  event ("stability");
-
-// both fluids have no influence on the boundary - redo the full solver
-  event("set_dtmax");
-  event("stability");
-  event("vof");
-  event("tracer_advection");
-  event("tracer_diffusion");
-  event("properties");
-  event("advection_term");
-  event("viscous_term");
-  event("accelerationprojection");
-  event("end_timestep");
 
 // modify the fs , cs, copy the outer fields in the partially covered cells
 
   foreach_cell(){
-      cs[]     = 1-cs[];
+      cs[]      = 1-cs[];
       // saved everywhere due to the adapt() function
-      p2[] = p[] ;
-      p[]  = p_temp[] ;
+      p_temp[]  = p2[] ;
+      p2[]      = p[] ;
+      p[]       = p_temp[] ;
       
-      pf2[] = pf[];
-      pf[]  = pf_temp[];
+      pf_temp[] = pf2[];
+      pf2[]     = pf[];
+      pf[]      = pf_temp[];
 
 
       foreach_dimension(){
  
-        u2.x[] = u.x[];
-        u.x[]  = u_temp.x[];
-        g2.x[] = g.x[];
-        g.x[]  = g_temp.x[];
+        u_temp.x[] = u2.x[];
+        u2.x[]     = u.x[];
+        u.x[]      = u_temp.x[];
+        g_temp.x[] = g2.x[];
+        g2.x[]     = g.x[];
+        g.x[]      = g_temp.x[];
       }
   }
 
   foreach_face(){
     fs.x[]  = 1.-fs.x[];
-    uf2.x[] = uf.x[];
-    uf.x[]  = uf_temp.x[];
+    uf_temp.x[] = uf2.x[];
+    uf2.x[]     = uf.x[];
+    uf.x[]      = uf_temp.x[];
   }
+  boundary({cs,fs});
+  restriction({cs,fs});
 
   boundary ((scalar *){u});
   trash ({uf});
@@ -560,7 +537,7 @@ face vector uf_temp[];
 
   event ("properties");
 
-  dtmax = DT;
+  dtmax = DT; // need to ensure that we have the same timestep
   event ("stability");
   // event("adapt");
 }
