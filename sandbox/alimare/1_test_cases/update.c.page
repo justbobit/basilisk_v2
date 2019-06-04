@@ -98,7 +98,7 @@ u.t[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
 
 event init (t = 0)
 {
-
+  DT = 5.e-4;
   /**
   The domain is the intersection of a channel of width unity and a
   circle of diameter 0.125. */
