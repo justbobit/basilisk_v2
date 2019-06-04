@@ -61,7 +61,7 @@ The domain is eight units long, centered vertically. */
 int main() {
   L0 = 8.;
   origin (-1.5, -L0/2.);
-  N = 512;
+  N = 256;
   mu = muv;
   run(); 
 }
@@ -115,12 +115,12 @@ event init (t = 0)
   
   foreach(){
     double theta = atan2(y, x), r = sqrt(x*x + y*y);
-    u.x[]  = cs[] ? 1.           : 0;
+    u.x[]  = cs[] ? 1.           : r*cos(theta);
     // u2.x[] = cs[] ? r*cos(theta) : 0.;
-    u.y[]  = 0.;
+    u.y[]  = cs[] ? 0. : r*sin(theta);
     // u2.y[] = cs[] ? r*sin(theta) : 0.;
   }
-  boundary ((scalar *){u,u2});
+  boundary ((scalar *){u});
   scalar l[];
   foreach()
     l[] = cs[];
@@ -133,7 +133,7 @@ We check the number of iterations of the Poisson and viscous
 problems. */
 
 event logfile (i++)
-  fprintf (stderr, "%d %g %d %d\n", i, t, mgp.i, mgu.i);
+  fprintf (stderr, "%d %g %g %d %d\n", i, t2, dt, mgp.i, mgu.i);
 
 
 // event LS_reinitialization(i+=5,last){
