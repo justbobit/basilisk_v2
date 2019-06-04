@@ -31,6 +31,8 @@ scalar * level_set = NULL;
 
 face vector muv[];
 
+double t2 = 0;
+
 double geometry(double x, double y, double Radius) {
 
   coord center_circle, center_rectangle, size_rectangle;
@@ -44,10 +46,11 @@ double geometry(double x, double y, double Radius) {
   size_rectangle.y = 1.2; 
 
   double s = circle (x, y, center_circle, Radius);
-  double r = -rectangle (x, y, center_rectangle, size_rectangle);
+  double r = rectangle (x, y, center_rectangle, size_rectangle);
 
-  double zalesak = -difference (s , r);
+  // double zalesak = -difference (s , r);
   // double zalesak = -s;
+  double zalesak = -r;
 
   return zalesak;
 }
@@ -194,10 +197,12 @@ event movies (t += 0.05; t <= 5.0)
 /**
 We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
-
-event adapt (i++) {
-  adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 9, 4);
+#if DOUBLE_EMBED
+event adapt (i+=2 ;t <= 0.2) {
+  adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 8, 4);
+  t2 += dt
 }
+#endif
 
 /**
 # Future work
