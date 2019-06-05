@@ -132,7 +132,7 @@ event init (t = 0)
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++)
+event logfile (i++;t <= 0.2)
   fprintf (stderr, "%d %g %g %d %d\n", i, t2, dt, mgp.i, mgu.i);
 
 
@@ -201,11 +201,15 @@ event movies (i += 20)
 We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 #if DOUBLE_EMBED
-event adapt (i+=2 ;t <= 0.2) {
+event adapt (i+=2) {
+  fprintf(stderr, "%d \n", i);
   adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 8, 4);
   t2 += dt
-}
+#else
+event adapt (i++) {
+  adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
 #endif
+}
 
 /**
 # Future work
