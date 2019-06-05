@@ -109,6 +109,7 @@ event init (t = 0)
   }
   boundary ({phi});
   fractions (phi, cs, fs);
+  restriction({cs,fs});
 
   /**
   We set the initial velocity field. */
