@@ -163,6 +163,9 @@ event defaults (i = 0)
 
 #if TREE
   uf.x.refine = refine_face_solenoidal;
+#if DOUBLE_EMBED
+  uf2.x.refine = refine_face_solenoidal;
+#endif // DOUBLE_EMBED
 
   /**
   When using [embedded boundaries](/src/embed.h), the restriction and
@@ -179,6 +182,18 @@ event defaults (i = 0)
   }
   for (scalar s in {p, pf})
     s.embed_gradient = pressure_embed_gradient;
+#if DOUBLE_EMBED
+  uf2.x.refine = refine_face;
+  foreach_dimension(){
+    uf2.x.prolongation = refine_embed_face_x;
+  }
+  for (scalar s in {p2, pf2, u2, g2}) {
+    s.restriction = restriction_embed_linear;
+    s.refine = s.prolongation = refine_embed_linear;
+  }
+  for (scalar s in {p2, pf2})
+    s.embed_gradient = pressure_embed_gradient;
+#endif // DOUBLE_EMBED
 #endif // EMBED
 #endif // TREE
 }
