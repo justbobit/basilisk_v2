@@ -48,9 +48,9 @@ double geometry(double x, double y, double Radius) {
   double s = circle (x, y, center_circle, Radius);
   double r = rectangle (x, y, center_rectangle, size_rectangle);
 
-  // double zalesak = -difference (s , r);
+  double zalesak = -difference (s , r);
   // double zalesak = -s;
-  double zalesak = -r;
+  // double zalesak = -r;
 
   return zalesak;
 }
