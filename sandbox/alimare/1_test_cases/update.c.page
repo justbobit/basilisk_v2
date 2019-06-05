@@ -178,21 +178,22 @@ event movies (i += 20)
   foreach(){
     m[] = 0., m2[] = 0. , m3[] =0.;
     foreach_dimension()
-      m[]  += cs[]*sq(u.x[]) + (1-cs[])*sq(u2.x[]);
+      // m[]  += cs[]*sq(u.x[]) + (1-cs[])*sq(u2.x[]);
       m2[] += cs[]*sq(u.x[]) ;
-      m3[] += (1-cs[])*sq(u2.x[]);
-      m[]   = sqrt(m[]);
+      // m3[] += (1-cs[])*sq(u2.x[]);
+      // m[]   = sqrt(m[]);
       m2[]  = sqrt(m2[]);
-      m3[]  = sqrt(m3[]);
+      // m3[]  = sqrt(m3[]);
   }
-  boundary ({m,m2,m3});
+  // boundary ({m,m2,m3});
+  boundary ({m2});
   // restriction({m,m2,m3});
-  output_ppm (m, file = "vort.gif", box = {{-2,-2.},{2.,2.}},
-        linear = true);
+  // output_ppm (m, file = "vort.gif", box = {{-2,-2.},{2.,2.}},
+  //       linear = true);
   output_ppm (m2, file = "vort2.gif", box = {{-2,-2.},{2.,2.}},
         linear = true);
-  output_ppm (m3, file = "vort3.gif", box = {{-2,-2.},{2.,2.}},
-        linear = true);
+  // output_ppm (m3, file = "vort3.gif", box = {{-2,-2.},{2.,2.}},
+  //       linear = true);
   // output_ppm (f, file = "f.gif", box = {{-2.,-2.},{2.,2.}}, 
   //       n = 800,linear = false, min = 0, max = 1, mask = m);
 }
