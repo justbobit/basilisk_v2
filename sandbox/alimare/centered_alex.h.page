@@ -511,7 +511,7 @@ face vector uf_temp[];
 
 // modify the fs , cs, copy the outer fields in the partially covered cells
 
-  foreach_cell(){
+  foreach(){
       cs[]      = 1-cs[];
       // saved everywhere due to the adapt() function
       p_temp[]  = p2[] ;
