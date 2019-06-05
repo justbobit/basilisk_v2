@@ -42,8 +42,8 @@ double geometry(double x, double y, double Radius) {
   center_rectangle.x = -0.0;
   center_rectangle.y =  -0.5;
 
-  size_rectangle.x = 0.5;
-  size_rectangle.y = 1.2; 
+  size_rectangle.x = 0.51;
+  size_rectangle.y = 1.21; 
 
   double s = circle (x, y, center_circle, Radius);
   double r = rectangle (x, y, center_rectangle, size_rectangle);
