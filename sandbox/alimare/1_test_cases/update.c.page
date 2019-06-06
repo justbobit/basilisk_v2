@@ -1,19 +1,24 @@
 /**
-#Update embed-boundary
+#Double embed boundary calculation
 
-First test case where i update the embedded boundary. Based on the example of
-the Bénard–von Kármán Vortex Street for flow around a cylinder at Re=160.
+First test case with a double calculation inside and outside of an embedded boundary.
+This is based on the example of the Bénard–von Kármán Vortex Street for flow 
+around a cylinder at Re=160, I modified the geometry for fun and use a
+Zalesak's notched disk. Both fluids have the same properties. We use cs for
+the cell fraction in one phase and 1-cs in the other.
 
-We use the centered Navier-Stokes solver, with embedded boundaries and
-advect the passive tracer *f*. 
+At the end of each iteration of the solver we swap the variables, change the fs,
+the cs and do a solver iteration on the new set of variables.
+We use the centered Navier-Stokes solver, with embedded boundaries and advect
+the passive tracer *f*. 
 
-I combined the `metric` event from the embed.h and the `init` event of
-centered.h in the `LS_reinit`. Here the geometry is a notched disk (inspired by
-Zalesak's test case) with growing radius. There is no proper treatment for the
-growth of the radius (no physical conditions) and the velocity field is poorly
-updated (set to $0$ in the newly covered cells).
+I still have issues regarding the use of the same timestep for both phases. They
+hare truly independant. Once this is done I will work on making both phases
+fields dependant of one another and then make the boundary movement dependant on
+both fields.
 
-![Animation tracer field.](update/vort.gif)(loop)
+
+![Animation of cs*u.x + (1-cs)*u2.x.](update/vort.mp4)(loop)
 */
 
 #define DOUBLE_EMBED 1
@@ -24,6 +29,7 @@ updated (set to $0$ in the newly covered cells).
 // #include "navier-stokes/perfs.h"
 #include "tracer.h"
 #include "basic_geom.h"
+#include "view.h"
 
 scalar f[];
 scalar * tracers = {f};
@@ -56,12 +62,12 @@ double geometry(double x, double y, double Radius) {
 }
 
 /**
-The domain is eight units long, centered vertically. */
+The domain is 4 units long, centered vertically. */
 
 int main() {
   L0 = 4.;
   origin (-1.5, -L0/2.);
-  N = 256;
+  N = 512;
   mu = muv;
   run(); 
 }
@@ -112,7 +118,8 @@ event init (t = 0)
   restriction({cs,fs});
 
   /**
-  We set the initial velocity field. */
+  We set the initial velocity field and set a rotating field inside the notched
+  disk. */
   
   foreach(){
     double theta = atan2(y, x), r = sqrt(x*x + y*y);
@@ -125,18 +132,28 @@ event init (t = 0)
   scalar l[];
   foreach()
     l[] = cs[];
-  output_ppm (cs, file = "f_init.png", n = 1024,
-   box = {{-2,-2.},{2.,2.}});
+  output_ppm (cs, file = "f_init.png", n = 1024);
 }
 
 /**
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++;t <= 10.)
+event logfile (i+=20;t <= 16.)
   fprintf (stderr, "%d %g %g %d %d\n", i, t2, dt, mgp.i, mgu.i);
+/**
+We do save a dump at each t++ (real time t2+=0.5)
+*/
+event snapshot (t++) {
+  dump ("dump");
+}
 
-
+/**
+I combined the `metric` event from the embed.h and the `init` event of
+centered.h in the `LS_reinit`. Here the geometry is a notched disk (inspired by
+Zalesak's test case) with growing radius. There is no proper treatment for the
+growth of the radius (no physical conditions) and the velocity field is poorly
+updated (set to $0$ in the newly covered cells).*/
 // event LS_reinitialization(i+=5,last){
 //   if(i>1){
 
@@ -171,31 +188,24 @@ event logfile (i++;t <= 10.)
 /**
 We produce an animation of the tracer field. */
 
-event movies (i += 20)
+event movies (i +=20)
 {
-
-  scalar omega[], m[],m2[],m3[];
-  vorticity (u, omega);
+  scalar omega[];
+  vector m[];
   foreach(){
-    m[] = 0., m2[] = 0. , m3[] =0.;
     foreach_dimension()
-      m[]  += cs[]*sq(u.x[]) + (1-cs[])*sq(u2.x[]);
-      m2[] += cs[]*sq(u.x[]) ;
-      m3[] += (1-cs[])*sq(u2.x[]);
-      m[]   = sqrt(m[]);
-      m2[]  = sqrt(m2[]);
-      m3[]  = sqrt(m3[]);
+      m.x[]  = cs[]*u.x[] + (1-cs[])*u2.x[];
   }
-  boundary ({m,m2,m3});
-  // restriction({m,m2,m3});
-  output_ppm (m, file = "vort.gif", box = {{-2,-2.},{2.,2.}},
-        linear = true);
-  output_ppm (m2, file = "vort2.gif", box = {{-2,-2.},{2.,2.}},
-        linear = true);
-  output_ppm (m3, file = "vort3.gif", box = {{-2,-2.},{2.,2.}},
-        linear = true);
-  // output_ppm (f, file = "f.gif", box = {{-2.,-2.},{2.,2.}}, 
-  //       n = 800,linear = false, min = 0, max = 1, mask = m);
+  vorticity (m, omega);
+  boundary ((scalar *) {m});
+  boundary ({omega});
+  // output_ppm (omega, file = "vort.gif",linear = true);
+
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  squares("m.x",linear = true, min=-1, max = 1);
+  save ("movie.mp4");
 }
 
 /**
@@ -214,9 +224,8 @@ event adapt (i++) {
 /**
 # Future work
 
+* Synchronizing time steps in both phases
 * Movement of the boundary must follow the movement of a physical quantity.
 Use the velocity field near the boundary to advect a level set function and use
 the 0-level set as the boundary for the embedded boundary.
-* Having calculations inside and outside of the circle. Then set a Dirichlet
-condition on it and use it for both calculations.
 */
