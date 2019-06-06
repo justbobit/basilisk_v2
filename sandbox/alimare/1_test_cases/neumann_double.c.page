@@ -4,7 +4,7 @@
 We reproduce the test cases initially proposed by [Johansen and
 Collela, 1998](#johansen1998), Problem 1, p. 14, with Dirichlet
 boundary conditions and Problem 3, p. 19, with Neumann boundary
-conditions. */
+conditions. But now we solve it on both side of the interface ! */
 
 #include "embed.h"
 #include "poisson.h"
@@ -122,6 +122,11 @@ int main()
     scalar e[], ep[], ef[];
     scalar e2[], ep2[], ef2[];
     mgstats s, s2;
+    
+/**
+    Now we're ready to solve our equations on both side of the interface.
+*/
+
     for (j = 0; j<=1; j++){
 
       foreach() {
@@ -313,9 +318,9 @@ plot '' u 1:3 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
 
 ### Problem 3
 
-![Solution on the finest mesh](neumann/a.png)
+![Solution on the finest mesh](neumann_double/a.png)
 
-![Error on the finest mesh](neumann/e.png)
+![Error on the finest mesh](neumann_double/e.png)
 
 For Neumann boundary conditions, the residual also converges at first order 
 in partial cells.
