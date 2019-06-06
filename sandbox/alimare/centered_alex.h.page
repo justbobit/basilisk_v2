@@ -46,7 +46,11 @@ scalar p[];
 vector u[], g[];
 scalar pf[];
 face vector uf[];
+/**
+In the specific case where we have two phases calculated we store the values in p2,u2... fields. At the end of each iteration we swap the variables and then the solver can be reapplied to the new set of variables.  
 
+TBD: one has to be careful to have all phases synchronized. Each phase is still run with its own timestep, therefore there is no coupling between both phases. 
+*/
 #if DOUBLE_EMBED
 
 scalar p2[];
@@ -92,8 +96,8 @@ balanced by the pressure gradient. Taking care of boundary orientation
 and staggering of $\mathbf{a}$, this can be written */
 
 #if EMBED
-# define neumann_pressure(i) (alpha.n[i] ? a.n[i]*fm.n[i]/alpha.n[i] :	\
-			      a.n[i]*rho[]/(cm[] + SEPS))
+# define neumann_pressure(i) (alpha.n[i] ? a.n[i]*fm.n[i]/alpha.n[i] :  \
+            a.n[i]*rho[]/(cm[] + SEPS))
 #else
 # define neumann_pressure(i) (a.n[i]*fm.n[i]/alpha.n[i])
 #endif
@@ -305,20 +309,20 @@ void prediction()
       foreach_dimension() {
 #if EMBED
         if (!fs.x[] || !fs.x[1])
-	  du.x[] = 0.;
-	else
+    du.x[] = 0.;
+  else
 #endif
-	  du.x[] = u.x.gradient (u.x[-1], u.x[], u.x[1])/Delta;
+    du.x[] = u.x.gradient (u.x[-1], u.x[], u.x[1])/Delta;
       }
   else
     foreach()
       foreach_dimension() {
 #if EMBED
         if (!fs.x[] || !fs.x[1])
-	  du.x[] = 0.;
-	else
+    du.x[] = 0.;
+  else
 #endif
-	  du.x[] = (u.x[1] - u.x[-1])/(2.*Delta);
+    du.x[] = (u.x[1] - u.x[-1])/(2.*Delta);
     }
   boundary ((scalar *){du});
 
@@ -488,7 +492,9 @@ After mesh adaptation fluid properties need to be updated. When using
 [embedded boundaries](/src/embed.h) the fluid fractions and face
 fluxes need to be checked for inconsistencies. */
 
-
+/**
+Will be moved, should not be done here with DOUBLE_EMBED = 1.
+*/
 #if LevelSet
 event LS_reinitialization(i++,last);
 #endif
@@ -497,7 +503,7 @@ event LS_reinitialization(i++,last);
 
 /**
 Double calculation inside and outside of the boundary must be done before LS
-advection else theres is an inconsistency on the boundary definition.
+advection else theres is an inconsistency on the boundary definition. In theory, only the pointers should be swapped and not all the values of all the fields.
 */
 
 #if DOUBLE_EMBED  

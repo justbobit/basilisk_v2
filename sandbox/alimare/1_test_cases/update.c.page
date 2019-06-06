@@ -13,7 +13,7 @@ Zalesak's test case) with growing radius. There is no proper treatment for the
 growth of the radius (no physical conditions) and the velocity field is poorly
 updated (set to $0$ in the newly covered cells).
 
-![Animation tracer field.](update/f.gif)(loop)
+![Animation tracer field.](update/vort.gif)(loop)
 */
 
 #define DOUBLE_EMBED 1
@@ -46,7 +46,7 @@ double geometry(double x, double y, double Radius) {
   size_rectangle.y = 1.21; 
 
   double s = circle (x, y, center_circle, Radius);
-  double r = rectangle (x, y, center_rectangle, size_rectangle);
+  double r = -rectangle (x, y, center_rectangle, size_rectangle);
 
   double zalesak = -difference (s , r);
   // double zalesak = -s;
@@ -59,7 +59,7 @@ double geometry(double x, double y, double Radius) {
 The domain is eight units long, centered vertically. */
 
 int main() {
-  L0 = 8.;
+  L0 = 4.;
   origin (-1.5, -L0/2.);
   N = 256;
   mu = muv;
@@ -98,7 +98,7 @@ u.t[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
 
 event init (t = 0)
 {
-  DT = 5.e-4;
+  // DT = 5.e-4;
   /**
   The domain is the intersection of a channel of width unity and a
   circle of diameter 0.125. */
@@ -116,9 +116,9 @@ event init (t = 0)
   
   foreach(){
     double theta = atan2(y, x), r = sqrt(x*x + y*y);
-    u.x[]  = cs[] ? 1.           : r*cos(theta);
+    u.x[]  = cs[] ? 1.           : r/10.*cos(theta);
     // u2.x[] = cs[] ? r*cos(theta) : 0.;
-    u.y[]  = cs[] ? 0. : r*sin(theta);
+    u.y[]  = cs[] ? 0. : r/10.*sin(theta);
     // u2.y[] = cs[] ? r*sin(theta) : 0.;
   }
   boundary ((scalar *){u});
@@ -133,7 +133,7 @@ event init (t = 0)
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++;t <= 0.2)
+event logfile (i++;t <= 10.)
   fprintf (stderr, "%d %g %g %d %d\n", i, t2, dt, mgp.i, mgu.i);
 
 
@@ -203,7 +203,6 @@ We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 #if DOUBLE_EMBED
 event adapt (i+=2) {
-  fprintf(stderr, "%d \n", i);
   adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 8, 4);
   t2 += dt
 #else
