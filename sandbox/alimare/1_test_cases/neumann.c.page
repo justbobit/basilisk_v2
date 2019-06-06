@@ -6,9 +6,6 @@ Collela, 1998](#johansen1998), Problem 1, p. 14, with Dirichlet
 boundary conditions and Problem 3, p. 19, with Neumann boundary
 conditions. */
 
-
-#define DOUBLE_EMBED 1
-
 #include "embed.h"
 #include "poisson.h"
 #include "view.h"
@@ -86,6 +83,7 @@ int main()
     Conditions on the box boundaries are set (only relevant for Problem 3). */
     
     scalar a[], b[];
+    scalar a2[], b2[];
     
     a[left]   = exact (x - Delta/2., y);
     a.boundary_homogeneous[left] = dirichlet_homogeneous_bc;
@@ -120,21 +118,27 @@ int main()
     barycenter of the cut cell (xc,yc), which is calculated from the
     cell and surface fractions. */
     
-    foreach() {
-      a[] = cs[] > 0. ? exact (x, y) : nodata;
-      
-      double xc = x, yc = y;
-      if (cs[] > 0. && cs[] < 1.) {
-	coord n = facet_normal (point, cs, fs), p;
-	double alpha = plane_alpha (cs[], n);
-	line_center (n, alpha, cs[], &p);
-	xc += p.x*Delta, yc += p.y*Delta;
+    int j = 0;
+    scalar e[], ep[], ef[];
+    scalar e2[], ep2[], ef2[];
+    mgstats s, s2;
+    for (j = 0; j<=1; j++){
+
+      foreach() {
+        a[] = cs[] > 0. ? exact (x, y) : nodata;
+        
+        double xc = x, yc = y;
+        if (cs[] > 0. && cs[] < 1.) {
+    coord n = facet_normal (point, cs, fs), p;
+    double alpha = plane_alpha (cs[], n);
+    line_center (n, alpha, cs[], &p);
+    xc += p.x*Delta, yc += p.y*Delta;
+        }
+        //      fprintf (stderr, "xc %g %g\n", xc, yc);
+        double theta = atan2(yc, xc), r2 = sq(xc) + sq(yc);
+        b[] = 7.*r2*cos (3.*theta)*cs[];
       }
-      //      fprintf (stderr, "xc %g %g\n", xc, yc);
-      double theta = atan2(yc, xc), r2 = sq(xc) + sq(yc);
-      b[] = 7.*r2*cos (3.*theta)*cs[];
-    }
-    boundary ({a,b});
+      boundary ({a,b});
 
 #if 0
     output_cells (stdout);
@@ -175,55 +179,76 @@ int main()
 
     /**
     The Poisson equation is solved. */
-    
-    struct Poisson p;
-    p.alpha = fs;
-    p.lambda = zeroc;
-    p.embed_flux = embed_flux;
-    scalar res[];
-    double maxp = residual ({a}, {b}, {res}, &p), maxf = 0.;
-    foreach()
-      if (cs[] == 1. && fabs(res[]) > maxf)
-	maxf = fabs(res[]);
-    fprintf (stderr, "maxres %d %.3g %.3g\n", N, maxf, maxp);
+      struct Poisson p;
+      p.alpha = fs;
+      p.lambda = zeroc;
+      p.embed_flux = embed_flux;
+      scalar res[];
+      double maxp = residual ({a}, {b}, {res}, &p), maxf = 0.;
+      foreach()
+        if (cs[] == 1. && fabs(res[]) > maxf)
+    maxf = fabs(res[]);
+      fprintf (stderr, "maxres %d %.3g %.3g\n", N, maxf, maxp);
 
-    // FIXME: need to set minlevel to 4
-    timer t = timer_start();
-    mgstats s = poisson (a, b, alpha = fs,
-			 embed_flux =
-			 a.boundary[embed] != symmetry ? embed_flux : NULL,
-			 tolerance = 1e-6, minlevel = 4);
-    double dt = timer_elapsed (t);
-    printf ("%d %g %d %d\n", N, dt, s.i, s.nrelax);
+      // FIXME: need to set minlevel to 4
+      timer t = timer_start();
+      s = poisson (a, b, alpha = fs,
+         embed_flux =
+         a.boundary[embed] != symmetry ? embed_flux : NULL,
+         tolerance = 1e-6, minlevel = 4);
+      double dt = timer_elapsed (t);
+      printf ("%d %g %d %d\n", N, dt, s.i, s.nrelax);
 
-    /**
-    The total (*e*), partial cells (*ep*) and full cells (*ef*) errors
-    fields and their norms are computed. */
-    
-    scalar e[], ep[], ef[];
-    foreach() {
-      if (cs[] == 0.)
-	ep[] = ef[] = e[] = nodata;
-      else {
-	e[] = a[] - exact (x, y);
-	ep[] = cs[] < 1. ? e[] : nodata;
-	ef[] = cs[] >= 1. ? e[] : nodata;
+      /**
+      The total (*e*), partial cells (*ep*) and full cells (*ef*) errors
+      fields and their norms are computed. */
+      
+      foreach() {
+        if (cs[] == 0.)
+    ep[] = ef[] = e[] = nodata;
+        else {
+    e[] = a[] - exact (x, y);
+    ep[] = cs[] < 1. ? e[] : nodata;
+    ef[] = cs[] >= 1. ? e[] : nodata;
+        }
+      }
+
+      if(j==0){
+          foreach(){
+          a2[]  = a[];
+          b2[]  = b[];
+          cs[]  = 1. - cs[];
+          e2[]  = e[];
+          ep2[] = ep[];
+          ef[]  = ef2[];     
+        }
+
+        foreach_face(){
+          fs.x[] = 1.-fs.x[];
+        }
+        boundary({a2,b2});
+        restriction({a2,b2});
+        s2 = s;
       }
     }
     norm n = normf (e), np = normf (ep), nf = normf (ef);
-    fprintf (stderr, "%d %.3g %.3g %.3g %.3g %.3g %.3g %d %d\n",
-	     N, n.avg, n.max, np.avg, np.max, nf.avg, nf.max, s.i, s.nrelax);
-
+    norm n2 = normf (e2), np2 = normf (ep2), nf2 = normf (ef2);
+    fprintf (stderr, "%d %.3g %.3g %.3g %.3g %.3g %.3g %d %d \
+      %.3g %.3g %.3g %.3g %.3g %.3g %d %d\n",
+       N, n.avg, n.max, np.avg, np.max, nf.avg, nf.max, s.i, s.nrelax,
+       n2.avg, n2.max, np2.avg, np2.max, nf2.avg, nf2.max, s2.i, s2.nrelax);
+    
     /**
     The solution is displayed using bview. */
-
     view (fov = 18);
     squares ("a", spread = -1);
+    squares ("a2", spread = -1);
     draw_vof ("cs", "fs");
     save ("a.png");
 
     clear();
     squares ("e", spread = -1);
+    squares ("e2", spread = -1);
     draw_vof ("cs", "fs");
     save ("e.png");
 #endif
