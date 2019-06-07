@@ -129,7 +129,7 @@ event logfile (i++) {
 /**
 We generate an animation using Basilisk View. */
 
-event movie (t += 1e-2)
+event movie (t += 5e-2)
 {
 #if dimension == 2
   scalar omega[];
@@ -157,7 +157,7 @@ event movie (t += 1e-2)
 We save snapshots of the simulation at regular intervals to
 restart or to post-process with [bview](/src/bview). */
 
-event snapshot (t = 0.1; t += 0.1; t <= 4.0) {
+event snapshot (t = 0.1; t ++; t <= 4.0) {
   char name[80];
   sprintf (name, "snapshot-%g", t);
   scalar pid[];
@@ -323,22 +323,13 @@ Note that this assumes that the gl libraries have been
 ## Results
 
 ![Atomisation of a pulsed liquid jet. 4096^3^ equivalent
- resolution.](atomisation/movie.mp4)(width="800" height="600")
+ resolution.](atomisation_alex/movie.mp4)(width="800" height="600")
 
 The gain in number of grid points of the adaptive simulation (relative
 to a constant 4096^3^ Cartesian grid discretisation) is illustrated
 below as well as the computational speed (in
 points.timesteps/sec). The simulation on Mesu is restarted at $t=2.6$
 (after 12 hours of runtime).
-
-~~~gnuplot Compression ratio and computational speed
-set xlabel 'Time'
-set logscale y
-set key center right
-plot 'atomisation.occigen' u 1:8 w l t 'speed (occigen 1536 cores)', \
-     'atomisation.mesu' u 1:8 w l t 'speed (mesu 672 cores)', \
-     'atomisation.mesu' u 1:(4096.**3./$6) w l t 'compression ratio'
-~~~
 
 ~~~gnuplot Histogram of droplet volumes at $t=3.7$
 reset
@@ -353,7 +344,7 @@ minvol = log10(Delta**3) # minimum cell volume
 set arrow from minvol, graph 0 to minvol, graph 1 nohead
 set label "Minimum cell volume" at minvol - 0.2, graph 0.35 rotate by 90
 t = "3.7"
-plot "< awk '{if ($2==".t.") print $0;}' atomisation.out" u \
+plot "< awk '{if ($2==".t.") print $0;}' out" u \
      (binwidth*(floor((log10($4)-binstart)/binwidth)+0.5)+binstart):(1.0) \
      smooth freq w boxes t ''
 ~~~
