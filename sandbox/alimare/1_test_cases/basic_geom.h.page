@@ -14,6 +14,6 @@ double rectangle(double x, double y, coord center, coord size) {
 
 double circle(double x, double y,  coord center, double radius) {
   double R2  =  sq(x - center.x) + sq (y - center.y);
-  return ( R2 > sq(radius) ? -sqrt(R2 -sq (radius)) : sqrt(sq(radius) - R2 ));
+  return ( sqrt(R2) - radius);
 }
 
