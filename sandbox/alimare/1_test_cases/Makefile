@@ -4,6 +4,7 @@ include $(BASILISK)/Makefile.defs
 
 test_advection.tst: CFLAGS += -fopenmp
 
+reversed.tst      : CFLAGS += -fopenmp
 
 dirichlet.tst: CFLAGS += -DDIRICHLET=1 -DMTRACE=3
 dirichlet.c: neumann_double.c
