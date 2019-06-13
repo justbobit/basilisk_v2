@@ -120,8 +120,9 @@ int main()
     
     int j = 0;
     scalar e[], ep[], ef[];
-    scalar e2[], ep2[], ef2[];
-    mgstats s, s2;
+    scalar e2[];
+    mgstats s;
+    norm n, np , nf ;
     
 /**
     Now we're ready to solve our equations on both side of the interface.
@@ -217,19 +218,22 @@ int main()
     ep[] = ef[] = e[] = nodata;
         else {
     e[] = a[] - exact (x, y);
-    ep[] = cs[] < 1. ? e[] : nodata;
+    ep[] = cs[] <  1. ? e[] : nodata;
     ef[] = cs[] >= 1. ? e[] : nodata;
         }
       }
 
+      n = normf (e), np = normf (ep), nf = normf (ef);
+      fprintf (stderr, "err%d %d %.3g %.3g %.3g %.3g %.3g %.3g %d %d\n",
+     j, N, n.avg, n.max, np.avg, np.max, nf.avg, nf.max, s.i, s.nrelax);
+  
       if(j==0){
           foreach(){
           a2[]  = a[];
           b2[]  = b[];
-          cs[]  = 1. - cs[];
           e2[]  = e[];
-          ep2[] = ep[];
-          ef[]  = ef2[];     
+          cs[]  = 1. - cs[];
+
         }
 
         foreach_face(){
@@ -237,16 +241,10 @@ int main()
         }
         boundary({a2,b2,cs,fs});
         restriction({a2,b2,cs,fs});
-        s2 = s;
       }
+
+
     }
-    norm n = normf (e), np = normf (ep), nf = normf (ef);
-    norm n2 = normf (e2), np2 = normf (ep2), nf2 = normf (ef2);
-    fprintf (stderr, "%d %.3g %.3g %.3g %.3g %.3g %.3g %d %d \
-      %.3g %.3g %.3g %.3g %.3g %.3g %d %d\n",
-       N, n.avg, n.max, np.avg, np.max, nf.avg, nf.max, s.i, s.nrelax,
-       n2.avg, n2.max, np2.avg, np2.max, nf2.avg, nf2.max, s2.i, s2.nrelax);
-    
     /**
     The solution is displayed using bview. */
     view (fov = 18);
@@ -297,7 +295,7 @@ set grid ytics
 set ytics format "% .0e"
 set xrange [32:1024]
 set ylabel 'Maximum residual'
-set key bottom left
+set key top right
 plot '< grep maxres ../dirichlet/log' u 2:3 t 'full cells', exp(f(log(x))) t ftitle(a,b), \
      '' u 2:4 t 'partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
      '< grep maxres2 ../dirichlet/log' u 2:3 t 'full cells2', exp(f3(log(x))) t ftitle(a3,b3), \
@@ -310,15 +308,16 @@ This leads to third-order overall convergence.
 
 ~~~gnuplot Error convergence (phase 1)
 set xrange [*:*]
-fit f(x) '../dirichlet/log' u (log($1)):(log($3)) via a,b
-fit f2(x) '' u (log($1)):(log($4)) via a2,b2
-fit f3(x) '' u (log($1)):(log($6)) via a3,b3
-set xrange [64:1024]
+fit f(x) '< grep err0 ../dirichlet/log' u (log($2)):(log($4)) via a,b
+fit f2(x) '' u (log($2)):(log($5)) via a2,b2
+fit f3(x) '' u (log($2)):(log($7)) via a3,b3
+
+set xrange [32:1024]
 set ylabel 'Error'
 set yrange [*:*]
-plot '' u 1:3 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
-     '' u 1:4 t 'avg partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
-     '' u 1:6 t 'avg full cells', exp(f3(log(x))) t ftitle(a3,b3), \
+plot '' u 2:4 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
+     '' u 2:5 t 'avg partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
+     '' u 2:7 t 'avg full cells', exp(f3(log(x))) t ftitle(a3,b3), \
      'neumann.table2' u 1:2 w lp t 'max all cells (J and C, 1998)',\
      '' u 1:3 w lp t 'avg partial cells (J and C, 1998)', \
      '' u 1:4 w lp t 'avg full cells (J and C, 1998)'
@@ -326,17 +325,21 @@ plot '' u 1:3 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
 
 ~~~gnuplot Error convergence (phase 2)
 set xrange [*:*]
-fit f(x) '../dirichlet/log' u (log($1)):(log($11)) via a,b
-fit f2(x) '' u (log($1)):(log($12)) via a2,b2
-set xrange [64:1024]
+fit f(x) '< grep err1 ../dirichlet/log' u (log($2)):(log($4)) via a,b
+fit f2(x) '' u (log($2)):(log($5)) via a2,b2
+fit f3(x) '' u (log($2)):(log($7)) via a3,b3
+
+set xrange [32:1024]
 set ylabel 'Error'
 set yrange [*:*]
-plot '' u 1:11 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
-     '' u 1:12 t 'avg partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
+plot '' u 2:4 pt 6 t 'max all cells', exp(f(log(x))) t ftitle(a,b), \
+     '' u 2:5 t 'avg partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
+     '' u 2:7 t 'avg full cells', exp(f3(log(x))) t ftitle(a3,b3), \
      'neumann.table2' u 1:2 w lp t 'max all cells (J and C, 1998)',\
      '' u 1:3 w lp t 'avg partial cells (J and C, 1998)', \
      '' u 1:4 w lp t 'avg full cells (J and C, 1998)'
 ~~~
+
 
 ### Problem 3
 
@@ -354,9 +357,9 @@ fit f2(x) '' u (log($2)):(log($4)) via a2,b2
 fit f3(x) '< grep maxres2 log' u (log($2)):(log($3)) via a3,b3
 fit f4(x) '' u (log($2)):(log($4)) via a4,b4
 set ylabel 'Maximum residual'
-set xrange [64:1024]
+set xrange [32:1024]
 set yrange [1e-6:]
-set key bottom left
+set key top right
 plot '< grep maxres log' u 2:3 t 'full cells', exp(f(log(x))) t ftitle(a,b), \
      '' u 2:4 t 'partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
      '< grep maxres2 log' u 2:3 t 'full cells', exp(f3(log(x))) t ftitle(a3,b3), \
@@ -369,27 +372,22 @@ But this now leads to second-order overall convergence.
 
 ~~~gnuplot Maximum error convergence (phase 1)
 set xrange [*:*]
-fit f(x) 'log' u (log($1)):(log($3)) via a,b
-fit f2(x) '' u (log($1)):(log($5)) via a2,b2
+fit f(x) '< grep err0 log' u (log($2)):(log($4)) via a,b
+fit f2(x) '' u (log($2)):(log($6)) via a2,b2
+fit f3(x) '< grep err1 log' u (log($2)):(log($4)) via a3,b3
+fit f4(x) '' u (log($2)):(log($6)) via a4,b4
+
 set ylabel 'Maximum error'
-set xrange [64:1024]
+set xrange [32:1024]
 set yrange [*:*]
-plot '' u 1:3 pt 6 t 'all cells', exp(f(log(x))) t ftitle(a,b), \
-     '' u 1:5 t 'partial cells', exp(f2(log(x))) t ftitle(a2,b2), \
+plot '< grep err0 log' u 2:4 pt 6 t 'all cells (1)', exp(f(log(x))) t ftitle(a,b), \
+     '' u 2:6 t 'partial cells (1)', exp(f2(log(x))) t ftitle(a2,b2), \
+     '< grep err1 log' u 2:4 pt 6 t 'all cells (2)', exp(f3(log(x))) t ftitle(a3,b3), \
+     '' u 2:6 t 'partial cells (2)', exp(f4(log(x))) t ftitle(a4,b4), \
      'neumann.table5' u 1:5 w lp t 'all cells (J and C, 1998)', \
      'neumann.table5' u 1:4 w lp t 'partial cells (J and C, 1998)'
 ~~~
 
-~~~gnuplot Maximum error convergence (phase 2)
-set xrange [*:*]
-fit f(x) 'log' u (log($1)):(log($11)) via a,b
-set ylabel 'Maximum error'
-set xrange [64:1024]
-set yrange [*:*]
-plot '' u 1:11 pt 6 t 'all cells', exp(f(log(x))) t ftitle(a,b), \
-     'neumann.table5' u 1:5 w lp t 'all cells (J and C, 1998)', \
-     'neumann.table5' u 1:4 w lp t 'partial cells (J and C, 1998)'
-~~~
 
 ## References
 
