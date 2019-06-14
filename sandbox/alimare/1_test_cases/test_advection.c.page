@@ -32,7 +32,7 @@ only 4 cells.
  */
 
 int     MAXLEVEL;
-int     nb_cell_NB =  1 << 2 ;  // number of cells for the NB
+int     nb_cell_NB =  6 ;  // number of cells for the NB
 double  NB_width ;              // length of the NB
 
 int     N_display = 8;          // maximum level of refinement for which we 
@@ -58,7 +58,7 @@ int main() {
 }
 
 
-#define T 18000.
+#define T 2*40*(1 << 8)
 
 
 coord center_circle ={0.,0.};
@@ -99,7 +99,7 @@ event init (i = 0) {
   }
 
   foreach_face(){
-    u.x[] = 0.001;
+    u.x[] = 0.25/(1 << MAXLEVEL);
   }
 
 }
@@ -189,23 +189,9 @@ the $NB_{width}$
 
 event LS_reinitialization(i++,last){
 
-  // WIP
-  // scalar norm_v[];
-  // foreach()
-  //   norm_v[] =  0.;
-
-  // foreach_face()
-  //   norm_v[] += sq(uf.x[]);
-
-  // stats s         = statsf(norm_v);
-  // d_max_advected += sqrt(s.max)*dt;
-  // if(d_max_advected > NB_width){
-  //    d_max_advected = 0.;
-  // END OF WIP
-
   if(i>0){
     LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width,
-      1.4*(nb_cell_NB));
+      (nb_cell_NB));
   }
 }
 
