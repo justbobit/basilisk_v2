@@ -66,7 +66,7 @@ The domain is 4 units long, centered vertically. */
 
 int main() {
   L0 = 4.;
-  CFL = 0.1;
+  CFL = 0.5;
   origin (-1.5, -L0/2.);
   N = 512;
   mu = muv;
@@ -141,7 +141,7 @@ We check the number of iterations of the Poisson and viscous
 problems. */
 
 event logfile (i++;t <= 0.1)
-  fprintf (stderr, "%d %g %g %g %d %d\n", i, t, t2, dt, mgp.i, mgu.i);
+  fprintf (stderr, "%d %g %g %d %d\n", i, t, dt, mgp.i, mgu.i);
 /**
 We do save a dump at each t++ (real time t2+=0.5)
 */
@@ -197,7 +197,7 @@ event movies ( i +=6)
   vorticity (m, omega);
   boundary ((scalar *) {m});
   boundary ({omega});
-  // output_ppm (omega, file = "vort.gif",linear = true);
+  output_ppm (u2.x, file = "u2.gif",linear = true);
 
   view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
     ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
