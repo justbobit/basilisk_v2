@@ -18,7 +18,7 @@ fields dependant of one another and then make the boundary movement dependant on
 both fields.
 
 
-![Animation of cs*u.x + (1-cs)*u2.x.](update/vort.mp4)(loop)
+![Animation of cs*u.x + (1-cs)*u2.x.](update/movie.mp4)(loop)
 */
 
 #define DOUBLE_EMBED 1
@@ -66,6 +66,7 @@ The domain is 4 units long, centered vertically. */
 
 int main() {
   L0 = 4.;
+  CFL = 0.1;
   origin (-1.5, -L0/2.);
   N = 512;
   mu = muv;
@@ -139,14 +140,11 @@ event init (t = 0)
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i+=20;t <= 16.)
-  fprintf (stderr, "%d %g %g %d %d\n", i, t2, dt, mgp.i, mgu.i);
+event logfile (i++;t <= 0.1)
+  fprintf (stderr, "%d %g %g %g %d %d\n", i, t, t2, dt, mgp.i, mgu.i);
 /**
 We do save a dump at each t++ (real time t2+=0.5)
 */
-event snapshot (t++) {
-  dump ("dump");
-}
 
 /**
 I combined the `metric` event from the embed.h and the `init` event of
@@ -188,7 +186,7 @@ updated (set to $0$ in the newly covered cells).*/
 /**
 We produce an animation of the tracer field. */
 
-event movies (i +=20)
+event movies ( i +=6)
 {
   scalar omega[];
   vector m[];
