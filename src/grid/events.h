@@ -251,10 +251,18 @@ double dtnext (double dt)
 	dt = (tnext - t)/(n + 1);
       else if (dt1 < dt)
 	dt = dt1;
+#ifdef DOUBLE_EMBED
+      tnext = t + (1-i%2)*dt;
+#else
       tnext = t + dt;
+#endif
     }
   }
   else
-    tnext = t + dt;
+#ifdef DOUBLE_EMBED
+      tnext = t + (1-i%2)*dt;
+#else
+      tnext = t + dt;
+#endif
   return dt;
 }

@@ -237,12 +237,13 @@ event init (i = 0)
       g2.x[]     = g.x[];
     }
   }
-
+  boundary ((scalar *){u2});
+  trash ({uf2});
   foreach_face(){
-    uf2.x[]     = uf.x[];
+    uf2.x[]     = (1-fm.x[])*face_value (u2.x, 0);
   }
   boundary({p2,pf2});
-  boundary((scalar *){u2,g2,uf2});
+  boundary((scalar *){g2,uf2});
   restriction({p2,pf2});
   restriction((scalar *) {u2,g2,uf2});
 
@@ -257,11 +258,40 @@ The timestep for this iteration is controlled by the CFL condition,
 applied to the face centered velocity field $\mathbf{u}_f$; and the
 timing of upcoming events. */
 
-event set_dtmax (i++,last) dtmax = DT;
 
+#ifdef DOUBLE_EMBED
+event set_dtmax (i+=2,last) dtmax = DT;
+event stability (i+=2,last) {
+  double dt1 = dtnext (stokes ? dtmax : timestep (uf, dtmax));
+  foreach()
+      cs[]      = 1.-cs[];
+
+  foreach_face()
+    fs.x[]  = 1.-fs.x[];
+  boundary({cs,fs});
+  restriction({cs,fs});
+
+  double tnext1 = tnext;
+  double dt2 = dtnext (stokes ? dtmax : timestep (uf2, dtmax));
+
+  foreach()
+      cs[]      = 1.-cs[];
+
+  foreach_face()
+    fs.x[]  = 1.-fs.x[];
+  boundary({cs,fs});
+  restriction({cs,fs});
+
+  dt  = min(dt1,dt2);
+  if(tnext1<tnext) tnext = tnext1;
+
+}
+#else
+event set_dtmax (i++,last) dtmax = DT;
 event stability (i++,last) {
   dt = dtnext (stokes ? dtmax : timestep (uf, dtmax));
 }
+#endif
 
 /**
 If we are using VOF or diffuse tracers, we need to advance them (to
@@ -510,10 +540,10 @@ advection else theres is an inconsistency on the boundary definition. In theory,
 event double_calculation(i++,last)
 {
 
-scalar p_temp[];
-vector u_temp[], g_temp[];
-scalar pf_temp[];
-face vector uf_temp[];
+  scalar p_temp[];
+  vector u_temp[], g_temp[];
+  scalar pf_temp[];
+  face vector uf_temp[];
 
 // modify the fs , cs, copy the outer fields in the partially covered cells
 
@@ -557,9 +587,6 @@ face vector uf_temp[];
 
 
   event ("properties");
-
-  dtmax = DT; // need to ensure that we have the same timestep
-  event ("stability");
   // event("adapt");
 }
 #endif
