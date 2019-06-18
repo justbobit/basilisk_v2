@@ -259,7 +259,7 @@ applied to the face centered velocity field $\mathbf{u}_f$; and the
 timing of upcoming events. */
 
 
-#ifdef DOUBLE_EMBED
+#if DOUBLE_EMBED
 event set_dtmax (i+=2,last) dtmax = DT;
 event stability (i+=2,last) {
   double dt1 = dtnext (stokes ? dtmax : timestep (uf, dtmax));
@@ -550,31 +550,31 @@ event double_calculation(i++,last)
   foreach(){
       cs[]      = 1.-cs[];
       // saved everywhere due to the adapt() function
-      p_temp[]  = p2[] ;
-      p2[]      = p[] ;
-      p[]       = p_temp[] ;
+      p_temp[]  = p[] ;
+      p[]       = p2[] ;
+      p2[]      = p_temp[] ;
       
-      pf_temp[] = pf2[];
-      pf2[]     = pf[];
-      pf[]      = pf_temp[];
+      pf_temp[] = pf[];
+      pf[]      = pf2[];
+      pf2[]     = pf_temp[];
 
 
       foreach_dimension(){
  
-        u_temp.x[] = u2.x[];
-        u2.x[]     = u.x[];
-        u.x[]      = u_temp.x[];
-        g_temp.x[] = g2.x[];
-        g2.x[]     = g.x[];
-        g.x[]      = g_temp.x[];
+        u_temp.x[] = u.x[];
+        u.x[]      = u2.x[];
+        u2.x[]     = u_temp.x[];
+        g_temp.x[] = g.x[];
+        g.x[]      = g2.x[];
+        g2.x[]     = g_temp.x[];
       }
   }
 
   foreach_face(){
-    fs.x[]  = 1.-fs.x[];
-    uf_temp.x[] = uf2.x[];
-    uf2.x[]     = uf.x[];
-    uf.x[]      = uf_temp.x[];
+    fs.x[]      = 1.-fs.x[];
+    uf_temp.x[] = uf.x[];
+    uf.x[]      = uf2.x[];
+    uf2.x[]     = uf_temp.x[];
   }
   boundary({cs,fs});
   restriction({cs,fs});
