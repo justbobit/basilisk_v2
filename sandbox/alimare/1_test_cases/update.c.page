@@ -37,8 +37,6 @@ scalar * level_set = NULL;
 
 face vector muv[];
 
-double t2 = 0;
-
 double geometry(double x, double y, double Radius) {
 
   coord center_circle, center_rectangle, size_rectangle;
@@ -67,8 +65,8 @@ The domain is 4 units long, centered vertically. */
 int main() {
   L0 = 4.;
   CFL = 0.5;
-  origin (-1.5, -L0/2.);
-  N = 512;
+  origin (-L0/2., -L0/2.);
+  N = 256;
   mu = muv;
   run(); 
 }
@@ -124,27 +122,23 @@ event init (t = 0)
   
   foreach(){
     double theta = atan2(y, x), r = sqrt(x*x + y*y);
-    u.x[]  = cs[] ? 1.           : r/10.*cos(theta);
-    // u2.x[] = cs[] ? r*cos(theta) : 0.;
-    u.y[]  = cs[] ? 0. : r/10.*sin(theta);
-    // u2.y[] = cs[] ? r*sin(theta) : 0.;
+    u.x[]  = cs[] ? 2.           : r/2.*cos(theta);
+    u.y[]  = cs[] ? 0.           : r/2.*sin(theta);
   }
   boundary ((scalar *){u});
   scalar l[];
   foreach()
     l[] = cs[];
-  output_ppm (cs, file = "f_init.png", n = 1024);
 }
 
 /**
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++;t <= 0.1)
+event logfile (i++;t<=2.){
   fprintf (stderr, "%d %g %g %d %d\n", i, t, dt, mgp.i, mgu.i);
-/**
-We do save a dump at each t++ (real time t2+=0.5)
-*/
+
+}
 
 /**
 I combined the `metric` event from the embed.h and the `init` event of
@@ -186,7 +180,7 @@ updated (set to $0$ in the newly covered cells).*/
 /**
 We produce an animation of the tracer field. */
 
-event movies ( i +=6)
+event movies ( i +=6,last)
 {
   scalar omega[];
   vector m[];
@@ -197,12 +191,11 @@ event movies ( i +=6)
   vorticity (m, omega);
   boundary ((scalar *) {m});
   boundary ({omega});
-  output_ppm (u2.x, file = "u2.gif",linear = true);
 
   view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
     ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
   draw_vof("cs");
-  squares("m.x",linear = true, min=-1, max = 1);
+  squares("m.x", min=-2, max = 2);
   save ("movie.mp4");
 }
 
@@ -212,7 +205,6 @@ tracer fields. */
 #if DOUBLE_EMBED
 event adapt (i+=2) {
   adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 8, 4);
-  t2 += dt
 #else
 event adapt (i++) {
   adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
