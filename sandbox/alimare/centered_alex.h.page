@@ -238,6 +238,7 @@ event init (i = 0)
     }
   }
   boundary ((scalar *){u2});
+  restriction((scalar *) {u2});
   trash ({uf2});
   foreach_face(){
     uf2.x[]     = (1-fm.x[])*face_value (u2.x, 0);
@@ -245,7 +246,7 @@ event init (i = 0)
   boundary({p2,pf2});
   boundary((scalar *){g2,uf2});
   restriction({p2,pf2});
-  restriction((scalar *) {u2,g2,uf2});
+  restriction((scalar *) {g2,uf2});
 
 #endif
   
