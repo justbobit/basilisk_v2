@@ -581,10 +581,14 @@ event double_calculation(i++,last)
   restriction({cs,fs});
 
   boundary ((scalar *){u});
+  restriction ((scalar *){u});
+  boundary ({pf,p,g});
+  restriction ({pf,p,g});
   trash ({uf});
   foreach_face()
     uf.x[] = fm.x[]*face_value (u.x, 0);
   boundary ((scalar *){uf});
+  restriction ((scalar *){uf});
 
 
   event ("properties");
