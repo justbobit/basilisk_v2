@@ -26,14 +26,32 @@ both fields.
 #include "embed.h"
 #include "../centered_alex.h"
 #include "../level_set.h"
+#include "../elementary_body.h"
 // #include "navier-stokes/perfs.h"
 #include "tracer.h"
 #include "basic_geom.h"
 #include "view.h"
 
-scalar f[];
-scalar * tracers = {f};
-scalar * level_set = NULL;
+
+
+#define T_eq                  0.
+#define D_L                   0.12
+#define D_S                   1.
+#define TL_inf                1.
+#define TS_inf                -1.
+#define peclet_L              0.253
+#define peclet_S              0.124
+#define rho_S 917.
+#define rho_L 1000.
+#define latent_heat 334
+#define lambda_L 2.22e3
+#define lambda_S 555.e3
+
+
+scalar TL[], TS[],dist[];
+scalar * tracers = {TL, TS};
+scalar * level_set = {dist};
+face vector v_pc[];
 
 face vector muv[];
 
@@ -89,7 +107,6 @@ condition is used on the right boundary. */
 u.n[left]  = dirichlet(1.);
 p[left]    = neumann(0.);
 pf[left]   = neumann(0.);
-f[left]    = dirichlet(y < 0);
 
 u.n[right] = neumann(0.);
 p[right]   = dirichlet(0.);
@@ -98,8 +115,20 @@ pf[right]  = dirichlet(0.);
 /**
 The top and bottom walls are free-slip and the cylinder is no-slip. */
 
-u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
+u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(\
+    dirichlet_embed_LS(point , level_set));
+
+
+// normally |grad LS| = 1. therefore grad_LS is the normal to the interface
+
 u.t[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
+TL[embed]  = dirichlet(T_eq) 
+TL[left]   = dirichlet(TL_inf) 
+TL[right]  = dirichlet(TL_inf) 
+
+TS[embed]  = dirichlet(T_eq)
+TS[left]   = dirichlet(TS_inf) 
+TS[right]  = dirichlet(TS_inf) 
 
 event init (t = 0)
 {
@@ -108,12 +137,11 @@ event init (t = 0)
   The domain is the intersection of a channel of width unity and a
   circle of diameter 0.125. */
 
-  vertex scalar phi[];
   foreach_vertex() {
-    phi[] = -geometry(x,y,1.);
+    dist[] = -geometry(x,y,1.);
   }
-  boundary ({phi});
-  fractions (phi, cs, fs);
+  boundary ({dist});
+  fractions (dist, cs, fs);
   restriction({cs,fs});
 
   /**
@@ -129,13 +157,26 @@ event init (t = 0)
   scalar l[];
   foreach()
     l[] = cs[];
+
+  foreach() {
+    TL[] = cs[]*TL_inf;
+    TS[] = (1. - cs[])*TS_inf;
+  }
+
+  boundary({TL, TS, uf});
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  squares("cs", min=0, max = 1);
+  save ("cs.png");
+  exit(0);
 }
 
 /**
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++;t<=2.){
+event logfile (i++;t<=4.){
   fprintf (stderr, "%d %g %g %d %d\n", i, t, dt, mgp.i, mgu.i);
 
 }
@@ -146,9 +187,7 @@ centered.h in the `LS_reinit`. Here the geometry is a notched disk (inspired by
 Zalesak's test case) with growing radius. There is no proper treatment for the
 growth of the radius (no physical conditions) and the velocity field is poorly
 updated (set to $0$ in the newly covered cells).*/
-// event LS_reinitialization(i+=5,last){
-//   if(i>1){
-
+event LS_advection(i+=2,last){
 //     vertex scalar phi[];
 //     foreach_vertex() {
 //       phi[] = -geometry(x,y,0.13+0.025*t);
@@ -174,13 +213,47 @@ updated (set to $0$ in the newly covered cells).*/
 //     dtmax = DT;
 //     event ("stability");
 
-//   }
-// }
+  /**
+  In the evaporation examples
+  ([static_drop.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_drop.c) and
+  [static_film.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_film.c)),
+  the evaporation velocity was due to the diffusive flux of the vapor in the
+  gaz phase. Here, the solification is an equilibrium between the heat
+  transfers of each side of the interface. */
 
+  TL.D             = D_L;
+  TL.inverse       = false;
+  TL.peclet        = peclet_L;
+  TL.therm_conduct = lambda_L;
+  TL.rho           = rho_L;
+
+  TS.D             = D_S;
+  TS.inverse       = true;
+  TS.peclet        = peclet_S;
+  TS.therm_conduct = lambda_S;
+  TS.rho           = rho_S;
+  
+  double L_H       = latent_heat;
+
+  foreach_face()
+    v_pc.x[] = 0.;
+
+  for (scalar t in tracers) {    
+    face vector tv[];
+    phase_change_velocity (cs, t, tv, L_H);
+    foreach_face(){
+      if(fabs(dist[]))
+      v_pc.x[] += (dist[]>0. ? tv.x[] : - tv.x[]);
+    }
+  }
+  boundary((scalar*){v_pc});
+
+  advection (level_set, v_pc, dt);
+}
 /**
 We produce an animation of the tracer field. */
 
-event movies ( i +=6,last)
+event movies ( i +=10,last)
 {
   scalar omega[];
   vector m[];
@@ -204,10 +277,10 @@ We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 #if DOUBLE_EMBED
 event adapt (i+=2) {
-  adapt_wavelet ({cs,u,u2,f}, (double[]){1e-2,3e-2,3e-2,3e-2}, 8, 4);
+  adapt_wavelet ({cs,u,u2}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
 #else
 event adapt (i++) {
-  adapt_wavelet ({cs,u,f}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
+  adapt_wavelet ({cs,u}, (double[]){1e-2,3e-2}, 8, 4);
 #endif
 }
 
