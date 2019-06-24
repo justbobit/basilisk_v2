@@ -49,8 +49,8 @@ dirichlet_embed_LS(Point point, scalar dist){
     double min_neighb = 1.;
     double a = 0;
     foreach_dimension(){
-      min_neighb = min (min_neighb, dist_eps[-1,0]*dist_eps[]);
-      min_neighb = min (min_neighb, dist_eps[ 1,0]*dist_eps[]);
+      min_neighb = min (min_neighb, dist[-1,0]*dist[]);
+      min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
       
       if(min_neighb < 0.){
         a += v_pc[]*grad_LS_1_x(point, dist);
@@ -64,36 +64,35 @@ dirichlet_embed_LS(Point point, scalar dist){
 }
 
 
-foreach_dimension()
-double grad_LS_1_x(Point point, scalar dist){
+foreach_dimension(){
+  double grad_LS_1_x(Point point, scalar dist){
 
-  double dist1= 0., dist2= 0.,dist3= 0.;
-  dist1 += pow((dist0[1,0]-dist0[-1,0])/2.,2.);
-  dist2 += pow((dist0[1,0]-dist0[    ]),2.);
-  dist3 += pow((dist0[   ]-dist0[-1,0]),2.);
-  double Dij = Delta*dist0[]/
-          max(eps2,sqrt(max(dist1,max(dist2,dist3))));
-  delt = (sign2(dist0[])*fabs(dist_eps[])-Dij)/Delta;
-}
+    double dist1, dist2,dist3;
+    dist1 = (dist[1,0]-dist[-1,0])/2.;
+    dist2 = (dist[1,0]-dist[    ]);
+    dist3 = (dist[   ]-dist[-1,0]);
+    double a = max(eps2,sqrt(max(dist1,max(dist2,dist3)))) / Delta;
+  }
 
-double grad_LS_1_x(Point point, scalar dist){
-      double dist1= 0., dist2= 0.,dist3= 0.;
-      if(dist0[]>0){
+  double grad_LS_2_x(Point point, scalar dist){
+    double dist1= 0., dist2= 0.,dist3= 0.;
+    if(dist[]>0){
       foreach_dimension(){
-        double a = max(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
-        double b = min(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
+        double a = max(0.,(dist[]    - dist[-1,0])/Delta);
+        double b = min(0.,(dist[1,0] - dist[]    )/Delta);
         delt   += max(pow(a,2.),pow(b,2.));
       }
-      delt = sign2(dist0[])*sqrt(delt);
+      delt = sqrt(delt);
     }
     else{
       foreach_dimension(){
-        double a = min(0.,(dist_eps[]    - dist_eps[-1,0])/Delta);
-        double b = max(0.,(dist_eps[1,0] - dist_eps[]    )/Delta);
+        double a = min(0.,(dist[]    - dist[-1,0])/Delta);
+        double b = max(0.,(dist[1,0] - dist[]    )/Delta);
         delt   += max(pow(a,2.),pow(b,2.));
        }
-       delt = sqrt(delt);
+       delt = sign2(delt)*sqrt(delt);
     }
+  }
 }
 
 void LS_reinit2(scalar dist, double dt, double NB, int it_max){
