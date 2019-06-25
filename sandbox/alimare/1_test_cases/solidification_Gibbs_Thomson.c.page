@@ -396,7 +396,7 @@ event adapt (i++) {
 
 event LS_reinitialization(i+=50,last){
   if(i>15){
-    LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width/2.);
+    // LS_reinit2(dist,L0/(1 << MAX_LEVEL), NB_width/2.);
     // foreach()
     //  dist[] = clamp(dist[],-NB_width/5.,NB_width/5.);
   }

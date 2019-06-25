@@ -1,4 +1,4 @@
-pristine:0912c7f64a519748e31b4817860cdd69e6cc35026921a143c73d71584e62e823
+pristine:6f419c8466c12f623e0ecda6732bbc9e3ee234249971ac5d5e57488c3b211d22
 Starting with inventory:
 0000003163-75c76620a7c163316eabaca7c260dc7a3e43203e71f3d7dfc515cef3b9485265
 [TAG release 18-12-21
@@ -126,3 +126,11 @@ limarealexandre@gmail.com**20190325094753
  Ignore-this: 4e5d58ddebcaa5dbbb86a3b3900e4f97
 ] 
 hash: 0000007483-572a780ac87b907c47602f034a9056f47c7a58367b0215f632dd996d13cba92e
+[Recorded my last 4 months of work.
+limarealexandre@gmail.com**20190507142958
+ Ignore-this: 50208c6ac296e54947a7e8cff098a22d
+ Test cases of Scardovelli and Zalesak, comparison between the VOF method and Level Set
+ Still some work to do on the level set for the Zalesak test cases.
+ Need of a proper definition of the protocol for the Narrow width and number of iteration for the reinitialization process
+] 
+hash: 0000095203-abc4bd3cfa058cf4342cea951b196dd0017f49bd7bbc5a5f982444bdbed2c968

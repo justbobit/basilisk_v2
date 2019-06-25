@@ -25,7 +25,13 @@ void run (void)
     speed statistics. */
 
     update_perf();
+#ifdef DOUBLE_EMBED
+    if(iter%2==1) tnext = t;
     iter = inext, t = tnext;
+#else
+    iter = inext, t = tnext;
+#endif
+    
   }
 
   /**

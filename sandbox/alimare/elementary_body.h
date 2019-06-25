@@ -28,7 +28,7 @@ functions like compute the normal in every cell. */
 #include "vof.h"
 #include "diffusion.h"
 #include "curvature.h"
-#include "alimare/my_functions.h"
+#include "../sandbox/alimare/my_functions.h"
 
 /**
 We add three attribute to the scalar field: a diffusion coefficient $D$, a 
@@ -319,35 +319,7 @@ void LS_reinit2(scalar dist, double dt, double NB){
   int i, it_max=1000 ;
   double eps = dt/20., eps2 = eps/2.;
   scalar dist0[], dist_eps[];
-  double xCFL = 0.8;
-// 1) we make a copy of dist before iterating on it
-// 2) we determine xCFL according to the local size
-  foreach(reduction(min:xCFL)){
-    dist0[] = dist[] ;
-    if(fabs(dist[])<NB/5.){
-      //min_neighb : variable for detection if cell is near
-      //             the zero of the level set function
 
-      double min_neighb = 1.;
-      foreach_dimension(){
-        min_neighb = min (min_neighb, dist[-1,0]*dist[]); 
-        min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
-      }
-
-      if(min_neighb < 0.){
-        double dist1= 0., dist2= 0.,dist3= 0.;
-        foreach_dimension(){
-          dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
-          dist2 += powf((dist0[1,0]-dist0[    ]),2.);
-          dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
-        }
-        double Dij = Delta*dist0[]/
-                max(eps2,sqrt(max(dist1,max(dist2,dist3))));
-// stability condition near the interface is modified
-        xCFL = min(xCFL,fabs(Dij)/(Delta));
-      }
-    }
-  }
   for (i = 1; i<=it_max ; i++){
     double res=0.;
     foreach(){
@@ -355,9 +327,40 @@ void LS_reinit2(scalar dist, double dt, double NB){
     }
     boundary({dist_eps});
     
+    double xCFL = 0.8;
+// 1) we make a copy of dist before iterating on it
+// 2) we determine xCFL according to the local size
+    int sum = 0;
+    foreach(reduction(min:xCFL) reduction(+:sum)){
+      dist0[] = dist[] ;
+      if(fabs(dist_eps[])<NB){
+        sum ++;
+        //min_neighb : variable for detection if cell is near
+        //             the zero of the level set function
+
+        double min_neighb = 1.;
+        foreach_dimension(){
+          min_neighb = min (min_neighb, dist_eps[-1,0]*dist_eps[]); 
+          min_neighb = min (min_neighb, dist_eps[ 1,0]*dist_eps[]);
+        }
+
+        if(min_neighb < 0.){
+          double dist1= 0., dist2= 0.,dist3= 0.;
+          foreach_dimension(){
+            dist1 += powf((dist0[1,0]-dist0[-1,0])/2.,2.);
+            dist2 += powf((dist0[1,0]-dist0[    ]),2.);
+            dist3 += powf((dist0[   ]-dist0[-1,0]),2.);
+          }
+          double Dij = Delta*dist0[]/
+                  max(eps2,sqrt(max(dist1,max(dist2,dist3))));
+  // stability condition near the interface is modified
+          xCFL = min(xCFL,fabs(Dij)/(Delta));
+        }
+      }
+    }
     foreach(reduction(max:res)){
       double delt =0.;
-      if(fabs(dist_eps[])<NB/5.){
+      if(fabs(dist_eps[])<NB){
         //min_neighb : variable for detection if cell is near
         //             the zero of the level set function
 
@@ -401,9 +404,9 @@ void LS_reinit2(scalar dist, double dt, double NB){
     }
     boundary({dist});
     if(res<eps){
-      printf("%d %6.2e %6.2e %6.2e %f \n",i,res,eps, xCFL,dt);
+      fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);
       break;
     }
-    if(i==it_max)printf("NOT CONVERGED %6.2e %6.2e \n",  res,eps);
+    if(i==it_max)fprintf(stderr,"# REINIT NOT CONVERGED %d %6.2e %6.2e \n", sum, res,eps);
   }
 }

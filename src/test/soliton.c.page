@@ -4,7 +4,7 @@
 The [Green-Naghdi](/src/green-naghdi.h) system of equations admits
 solitary wave solutions of the form
 $$
-\eta(\psi) = ah_0\mbox{sech}^2\left(\psi\frac{\sqrt{3ah_0}}
+\eta(\psi) = ah_0\mathrm{sech}^2\left(\psi\frac{\sqrt{3ah_0}}
  {2h_0\sqrt{h_0(1+a)}}\right)
 $$
 $$
@@ -96,6 +96,7 @@ set logscale
 set xlabel 'N'
 set ylabel 'max|e|/a'
 set xtics 128,2,1024
+set cbrange [1:2]
 set grid
 fit [5:] a*x+b 'log' u (log($1)):(log($2)) via a,b
 plot [100:1250]'log' u 1:2 pt 7 t '', \
