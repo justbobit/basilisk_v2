@@ -66,7 +66,8 @@ The inputs of the function are:
 * $tr$: diffusive tracer field,
 * $\mathbf{v}_{pc}$: the phase change velocity. */
 
-void phase_change_velocity (scalar f, scalar tr, face vector v_pc, double latent_heat) {
+void phase_change_velocity (scalar f, scalar tr, face vector v_pc, 
+  double latent_heat) {
 
   foreach()
     f[] = clamp(f[], 0., 1.);
