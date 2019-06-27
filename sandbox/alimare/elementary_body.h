@@ -25,11 +25,11 @@ header files:
 * [my_functions.h](/sandbox/qmagdelaine/my_functions.h): to use some general
 functions like compute the normal in every cell. */
 
-#include "vof.h"
+// #include "vof.h"
 #include "diffusion.h"
 #include "curvature.h"
 #include "alex_functions.h"
-
+#include "embed-tree.h"
 /**
 We add three attribute to the scalar field: a diffusion coefficient $D$, a 
 equatilibrium value $t_eq$ and a Peclet number (for the evaporation this is the
@@ -66,8 +66,8 @@ The inputs of the function are:
 * $tr$: diffusive tracer field,
 * $\mathbf{v}_{pc}$: the phase change velocity. */
 
-void phase_change_velocity (scalar f, scalar tr, face vector v_pc, 
-  double latent_heat) {
+void phase_change_velocity_LS_embed (scalar f, scalar tr, scalar tr2, face
+  vector v_pc, scalar dist, scalar cs, double latent_heat) {
 
   foreach()
     f[] = clamp(f[], 0., 1.);
@@ -80,18 +80,25 @@ void phase_change_velocity (scalar f, scalar tr, face vector v_pc,
   \mathbf{v}_{pc} = \mathrm{Pe}\, D\, \nabla tr
   $$
   
-  we need the tracer gradient $\mathbf{gtr}$ in vapor. It is a priori not well
-  defined in a cell crossed by the interface since there is liquid in it.
-  Therefore we need to average the values of the gradients in the vapor neighbor
-  cells.
+  here we use the embed_gradient_face_x defined in embed that gives a proper
+  definition of the gradients with embedded boundaries. */
   
-  Thus, to use the right $\Delta$ in the computation of the gradient, we have to
-  compute it before the main loop of the function: */
-  
-  face vector gtr[];
+  face vector gtr[], gtr2[];
   foreach_face()
-    gtr.x[] = (tr[] - tr[-1])/Delta;
+    gtr.x[] = face_gradient_x(tr,0);
   boundary((scalar*){gtr});
+
+  foreach(){
+      cs[]      = 1.-cs[];
+  }
+  
+  foreach_face()
+    gtr2.x[] = face_gradient_x(tr2,0);
+  boundary((scalar*){gtr2});
+  
+  foreach(){
+      cs[]      = 1.-cs[];
+  }
 
   /**
   To find the vapor neighbor cells and weight the averaging between them, we
@@ -99,8 +106,8 @@ void phase_change_velocity (scalar f, scalar tr, face vector v_pc,
   have to compute it before the main loop, and not locally, to apply *boundary()*
   to it and get consistent values in the ghost cells. */
 
-  vector n[];
-  compute_normal (f, n);
+  face vector n[];
+  facet_normal (f, n);
 
   /**
   With the concentration gradient and the normal vector we can now compute the
@@ -111,42 +118,17 @@ void phase_change_velocity (scalar f, scalar tr, face vector v_pc,
   
   foreach_face() {
     v_pc.x[] = 0.;
-    
-    /**
-    Foreach face, we first compute the average value of the normal on the face
-    and renormalize it w.r.t the norm-1. We will use this normal to look where
-    in the phase in which the tracer diffuse and to weight the average of its
-    gradient. We inverse the normal if the tracer is associated the $f=1$ phase
-    to take the gradient in the right phase. */
-    
-    if (interfacial(point, f) || interfacial(neighborp(-1), f)) {
-      coord nf;
-      foreach_dimension()
-        nf.x = 0.;
-      if (interfacial(point, f)) {
-        foreach_dimension()
-          nf.x += n.x[];
-      }
-      if (interfacial(neighborp(-1), f)) {
-        nf.x += n.x[-1];
-        nf.y += n.y[-1];
-      }
-      double norm = 0.;
-      foreach_dimension()
-        norm += fabs(nf.x);
-      foreach_dimension()
-        nf.x /= (tr.inverse ? norm : - norm);
       
       /**
       We compute the evaporation velocity. */
       
-      if (nf.x > 0.) {
-        v_pc.x[] = (fabs(nf.x)*gtr.x[1, 0] 
-                    + fabs(nf.y)*(nf.y > 0. ? gtr.x[1, 1] : gtr.x[1, -1]));
+      if (n.x > 0.) {
+        v_pc.x[] = (fabs(n.x)*gtr.x[1, 0] 
+                    + fabs(n.y)*(nf.y > 0. ? gtr.x[1, 1] : gtr.x[1, -1]));
       }
       else if (nf.x < 0.) {
-        v_pc.x[] = (fabs(nf.x)*gtr.x[-1, 0]
-                    + fabs(nf.y)*(nf.y > 0. ? gtr.x[-1, 1] : gtr.x[-1, -1]));
+        v_pc.x[] = (fabs(n.x)*gtr.x[-1, 0]
+                    + fabs(n.y)*(n.y > 0. ? gtr.x[-1, 1] : gtr.x[-1, -1]));
       }
       v_pc.x[] *= fm.x[]*tr.D*tr.peclet;
     }
