@@ -34,18 +34,18 @@ both fields.
 
 
 
-#define T_eq                  0.
-#define D_L                   0.12
-#define D_S                   1.
-#define TL_inf                1.
-#define TS_inf                -1.
-#define peclet_L              0.253
-#define peclet_S              0.124
-#define rho_S 917.
-#define rho_L 1000.
-#define latent_heat 334
-#define lambda_L 2.22e3
-#define lambda_S 555.e3
+#define T_eq         0.
+#define D_L          0.12
+#define D_S          1.
+#define TL_inf       1.
+#define TS_inf       -1.
+#define peclet_L     0.253
+#define peclet_S     0.124
+#define rho_S        917.
+#define rho_L        1000.
+#define latent_heat  334
+#define lambda_L     2.22e3
+#define lambda_S     555.e3
 
 
 scalar TL[], TS[],dist[];
@@ -115,20 +115,21 @@ pf[right]  = dirichlet(0.);
 /**
 The top and bottom walls are free-slip and the cylinder is no-slip. */
 
-u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(\
-    dirichlet_embed_LS(point , level_set));
+/** on the embed boundary : .n velocity is the velocity of the LS .t is 0.
+*/
 
-
-// normally |grad LS| = 1. therefore grad_LS is the normal to the interface
-
+// u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(\
+//     dirichlet_embed_LS(point , dist));
+u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
 u.t[embed] = fabs(y) > 1.5 ? neumann(0.) : dirichlet(0.);
-TL[embed]  = dirichlet(T_eq) 
-TL[left]   = dirichlet(TL_inf) 
-TL[right]  = dirichlet(TL_inf) 
 
-TS[embed]  = dirichlet(T_eq)
-TS[left]   = dirichlet(TS_inf) 
-TS[right]  = dirichlet(TS_inf) 
+TL[embed]  = dirichlet(T_eq);
+TL[left]   = dirichlet(TL_inf); 
+TL[right]  = dirichlet(TL_inf); 
+
+TS[embed]  = dirichlet(T_eq);
+TS[left]   = dirichlet(TS_inf); 
+TS[right]  = dirichlet(TS_inf); 
 
 event init (t = 0)
 {

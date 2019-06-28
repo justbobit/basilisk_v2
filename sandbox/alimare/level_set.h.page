@@ -44,55 +44,46 @@ phi^0_{i}-phi^0_{i+1})$$
 
 Based on the work of Russo (2000)
  */
-dirichlet_embed_LS(Point point, scalar dist){
+ double dirichlet_embed_LS(Point point, scalar dist, double NB, 
+    face vector v_pc){
+
+  double a = 0; // default is 0 might be an issue for some applications that i
+  // still don't even think about as of now.
+  double min_neighb = 1.;
   if(fabs(dist[])<NB){
-    double min_neighb = 1.;
-    double a = 0;
     foreach_dimension(){
       min_neighb = min (min_neighb, dist[-1,0]*dist[]);
       min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
-      
+    }
+/**
+We make the asumption that |grad LS| ~ 1. if the reinit is done sufficiently
+often, therefore grad_LS is the normal to the interface. We use the same
+approximation of the gradient that we use in the LS_reinit2 function (see
+Russo).
+*/
+    foreach_dimension(){  
       if(min_neighb < 0.){
-        a += v_pc[]*grad_LS_1_x(point, dist);
+        double dist1, dist2,dist3;
+        dist1 = (dist[1,0]-dist[-1,0])/2.;
+        dist2 = (dist[1,0]-dist[    ]);
+        dist3 = (dist[   ]-dist[-1,0]);
+        a += v_pc.x[]*max(dist1,max(dist2,dist3))/ Delta;
       }
       else{
-        a += v_pc[]*grad_LS_2_x(point, dist);
+      if(dist[]>0){
+        double x1 = max(0.,(dist[]    - dist[-1,0])/Delta);
+        double x2 = min(0.,(dist[1,0] - dist[]    )/Delta);
+        a += v_pc.x[]*max(x1,x2);
       }
-      return a;
-    }
-  }
-}
-
-
-foreach_dimension(){
-  double grad_LS_1_x(Point point, scalar dist){
-
-    double dist1, dist2,dist3;
-    dist1 = (dist[1,0]-dist[-1,0])/2.;
-    dist2 = (dist[1,0]-dist[    ]);
-    dist3 = (dist[   ]-dist[-1,0]);
-    double a = max(eps2,sqrt(max(dist1,max(dist2,dist3)))) / Delta;
-  }
-
-  double grad_LS_2_x(Point point, scalar dist){
-    double dist1= 0., dist2= 0.,dist3= 0.;
-    if(dist[]>0){
-      foreach_dimension(){
-        double a = max(0.,(dist[]    - dist[-1,0])/Delta);
-        double b = min(0.,(dist[1,0] - dist[]    )/Delta);
-        delt   += max(pow(a,2.),pow(b,2.));
+      else{
+        double x1 = min(0.,(dist[]    - dist[-1,0])/Delta);
+        double x2 = max(0.,(dist[1,0] - dist[]    )/Delta);
+          a += v_pc.x[]*min(x1,x2);
+        }
       }
-      delt = sqrt(delt);
-    }
-    else{
-      foreach_dimension(){
-        double a = min(0.,(dist[]    - dist[-1,0])/Delta);
-        double b = max(0.,(dist[1,0] - dist[]    )/Delta);
-        delt   += max(pow(a,2.),pow(b,2.));
-       }
-       delt = sign2(delt)*sqrt(delt);
     }
   }
+  return a;
 }
 
 void LS_reinit2(scalar dist, double dt, double NB, int it_max){

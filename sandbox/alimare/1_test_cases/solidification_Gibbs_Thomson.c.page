@@ -107,7 +107,6 @@ We need time factor to set the Dirichlet condition, its role is specified in
 #define lambda_L 2.22e3
 #define lambda_S 555.e3
 
-
 /**
 We allocate several scalar fields to describe both the
 interface and temperature fields. */
