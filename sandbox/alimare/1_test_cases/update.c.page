@@ -324,13 +324,14 @@ event movies ( i +=10,last)
 We adapt according to the error on the embedded geometry, velocity and
 tracer fields. */
 #if DOUBLE_EMBED
-event adapt (i+=2) {
-  adapt_wavelet ({cs,u,u2}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
+// event adapt (i+=2) {
+//   adapt_wavelet ({cs,u,u2}, (double[]){1e-2,3e-2,3e-2}, 8, 4);
+// }
 #else
 event adapt (i++) {
   adapt_wavelet ({cs,u}, (double[]){1e-2,3e-2}, 8, 4);
-#endif
 }
+#endif
 
 /**
 # Future work
