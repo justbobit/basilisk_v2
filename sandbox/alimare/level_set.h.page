@@ -44,45 +44,14 @@ phi^0_{i}-phi^0_{i+1})$$
 
 Based on the work of Russo (2000)
  */
- double dirichlet_embed_LS(Point point, scalar dist, double NB, 
+ double dirichlet_embed_LS(Point point, scalar cs, face vector fs, 
     face vector v_pc){
 
-  double a = 0; // default is 0 might be an issue for some applications that i
-  // still don't even think about as of now.
-  double min_neighb = 1.;
-  if(fabs(dist[])<NB){
-    foreach_dimension(){
-      min_neighb = min (min_neighb, dist[-1,0]*dist[]);
-      min_neighb = min (min_neighb, dist[ 1,0]*dist[]);
-    }
-/**
-We make the asumption that |grad LS| ~ 1. if the reinit is done sufficiently
-often, therefore grad_LS is the normal to the interface. We use the same
-approximation of the gradient that we use in the LS_reinit2 function (see
-Russo).
-*/
-    foreach_dimension(){  
-      if(min_neighb < 0.){
-        double dist1, dist2,dist3;
-        dist1 = (dist[1,0]-dist[-1,0])/2.;
-        dist2 = (dist[1,0]-dist[    ]);
-        dist3 = (dist[   ]-dist[-1,0]);
-        a += v_pc.x[]*max(dist1,max(dist2,dist3))/ Delta;
-      }
-      else{
-      if(dist[]>0){
-        double x1 = max(0.,(dist[]    - dist[-1,0])/Delta);
-        double x2 = min(0.,(dist[1,0] - dist[]    )/Delta);
-        a += v_pc.x[]*max(x1,x2);
-      }
-      else{
-        double x1 = min(0.,(dist[]    - dist[-1,0])/Delta);
-        double x2 = max(0.,(dist[1,0] - dist[]    )/Delta);
-          a += v_pc.x[]*min(x1,x2);
-        }
-      }
-    }
-  }
+  coord n = facet_normal (point, cs, fs);
+  normalize(&n);
+  double a = 0;
+  foreach_dimension()
+    a += n.x*v_pc.x[];
   return a;
 }
 
@@ -174,7 +143,9 @@ void LS_reinit2(scalar dist, double dt, double NB, int it_max){
         if(fabs(delt)>=res) res = fabs(delt);
       }
     }
+    
     boundary({dist});
+    restriction({dist});
   // if((i%10 == 0) & (i<it_max)) 
   //   fprintf(stderr,"# REINIT_LS %d %d %6.2e %6.2e 
   //   %6.2e %f %f\n",i, sum, res,eps, xCFL,dt, NB);

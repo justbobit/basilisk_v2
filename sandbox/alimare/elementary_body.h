@@ -66,12 +66,8 @@ The inputs of the function are:
 * $tr$: diffusive tracer field,
 * $\mathbf{v}_{pc}$: the phase change velocity. */
 
-void phase_change_velocity_LS_embed (scalar f, scalar tr, scalar tr2, face
-  vector v_pc, scalar dist, scalar cs, double latent_heat) {
-
-  foreach()
-    f[] = clamp(f[], 0., 1.);
-  boundary ({f, tr});
+void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
+ scalar tr2, face vector v_pc, scalar dist, double latent_heat) {
   
  /**
   The phase change velocity $\mathbf{v}_{pc}$ is
@@ -91,6 +87,11 @@ void phase_change_velocity_LS_embed (scalar f, scalar tr, scalar tr2, face
   foreach(){
       cs[]      = 1.-cs[];
   }
+  foreach_face()
+    fs.x[]      = 1.-fs.x[];
+
+  boundary({cs,fs});
+  restriction({cs,fs});
   
   foreach_face()
     gtr2.x[] = face_gradient_x(tr2,0);
@@ -99,15 +100,10 @@ void phase_change_velocity_LS_embed (scalar f, scalar tr, scalar tr2, face
   foreach(){
       cs[]      = 1.-cs[];
   }
-
-  /**
-  To find the vapor neighbor cells and weight the averaging between them, we
-  compute the normal (normalized w.r.t. the norm-2) to the interface. We
-  have to compute it before the main loop, and not locally, to apply *boundary()*
-  to it and get consistent values in the ghost cells. */
-
-  face vector n[];
-  facet_normal (f, n);
+  foreach_face()
+    fs.x[]      = 1.-fs.x[];
+  boundary({cs,fs});
+  restriction({cs,fs});
 
   /**
   With the concentration gradient and the normal vector we can now compute the
@@ -117,160 +113,24 @@ void phase_change_velocity_LS_embed (scalar f, scalar tr, scalar tr2, face
   by the face metric. */
   
   foreach_face() {
+
     v_pc.x[] = 0.;
-      
+    if (cs[] > 0. && cs[] < 1.){
+
+      /**
+      To find the vapor neighbor cells and weight the averaging between them, we
+      compute the normal (normalized w.r.t. the norm-2) to the interface. We
+      have to compute it before the main loop, and not locally, to apply *boundary()*
+      to it and get consistent values in the ghost cells. */
+
+      coord n = facet_normal (point, cs, fs);
+      normalize(&n);
       /**
       We compute the evaporation velocity. */
-      
-      if (n.x > 0.) {
-        v_pc.x[] = (fabs(n.x)*gtr.x[1, 0] 
-                    + fabs(n.y)*(nf.y > 0. ? gtr.x[1, 1] : gtr.x[1, -1]));
-      }
-      else if (nf.x < 0.) {
-        v_pc.x[] = (fabs(n.x)*gtr.x[-1, 0]
-                    + fabs(n.y)*(n.y > 0. ? gtr.x[-1, 1] : gtr.x[-1, -1]));
-      }
-      v_pc.x[] *= fm.x[]*tr.D*tr.peclet;
+      v_pc.x[] = (gtr.x[]*n.x + gtr2.x[]*n.x)*fm.x[]*1e-4;
     }
   }
   boundary((scalar *){v_pc});
 }
 
 
-/**
-## Diffusion with an immersed dirichlet condition 
-
-An important point is how the immersed Dirichlet boundary condition is
-handled. To ensure that the diffusive tracer at the interface stays
-at the equilibrium value $t_eq$ and is not washed away, we introduce a source
-term in the diffusion equation. This term is activated all over the liquid.
-This term is as large as the difference between the actual value and
-$t_eq$ is. This modified equation therefore reads:
-$$
-\frac{\partial tr}{\partial t} = \Delta tr + p\, \delta_{op} \quad \text{with}
-\quad p = \frac{tr_{eq} - tr}{\tau_e}
-$$
-where $\delta_{op}$ is 1 in the *other phase* (where the tracer does not diffuse),
-$\tau_e$ is a time, which has to be shorter than the smallest diffusive time in
-order for the control to be effective. The smallest diffusive time is $\tau_D =
-\frac{\delta^2}{D}$ where $\delta$ is the smallest size in all the tree. Thus,
-we choose $\tau_e = \frac{\tau_D}{\alpha}$ with $\alpha$ larger than 1.
-Thereafter, $\alpha$ will be refered as *time factor*.
-
-In 2D, the production terme $P$ intergrated over the cell is:
-$$
-P = \iint_S{p\, \delta_{op}} = p\, f\, \Delta^2
-= \frac{tr_{eq} - tr}{\tau_e}\, f\, \Delta^2
-$$
-
-The inputs of the function are:
-
-* $tr$: diffusive tracer field,
-* $f$: VOF tracer,
-* *max_level*: maximal level in the simulation,
-* $dt$: timestep,
-* $tr_{op}$: another tracer in the *other phase*, unused for elementary bodies,
-but requied for mixtures (Raoult law). */
-
-struct Dirichlet_Diffusion {
-  // mandatory
-  scalar tr;
-  scalar f;
-  scalar tr_eq;
-  int max_level;
-  double dt;
-  double time_factor;
-  // optional
-  scalar tr_op; // default uniform 1.
-};
-
-mgstats dirichlet_diffusion (struct Dirichlet_Diffusion p) {
-
-  /**
-  We redefine the inputs for convenience. */
-  
-  scalar tr = p.tr, f = p.f, tr_op = automatic (p.tr_op), tr_eq = p.tr_eq;
-  int max_level = p.max_level;
-  double time_factor = p.time_factor;
-
-  foreach()
-    f[] = clamp(f[], 0., 1.);
-  boundary ({f, tr});
-  if (p.tr_op.i)
-    boundary ({tr_op});
-
-  /**
-  We compute the volumic metric of the cells, the dirichlet source terms and
-  the diffusion coefficient. If the diffusive tracer is associated to the $f=1$
-  phase, we set the production term in the $f=0$ phase. */
-
-  scalar volumic_metric[], dirichlet_source_term[], dirichlet_feedback_term[];
-  face vector diffusion_coef[];
-
-  foreach() {
-    volumic_metric[] = cm[];
-    if (p.tr_op.i)  
-      dirichlet_source_term[] = cm[]*tr_eq[]*tr_op[]*tr.D*time_factor*(tr.inverse ?
-                                  f[] : 1. - f[])*sq((1<<max_level)/L0);
-    else
-      dirichlet_source_term[] = cm[]*tr_eq[]*tr.D*time_factor*(tr.inverse ?
-                                  f[] : 1. - f[])*sq((1<<max_level)/L0);
-    dirichlet_feedback_term[] = - cm[]*tr.D*time_factor*(tr.inverse ?
-                                  f[] : 1. - f[])*sq((1<<max_level)/L0);
-  }
-  foreach_face()
-    diffusion_coef.x[] = fm.x[]*tr.D;
-
-  boundary({volumic_metric, dirichlet_source_term, dirichlet_feedback_term, diffusion_coef});
-
-  /**
-  The diffusion equation is solved thanks to [diffusion.h](/src/diffusion.h): */
-  
-  return diffusion (tr, dt, D = diffusion_coef, r = dirichlet_source_term,
-			              beta = dirichlet_feedback_term, theta = volumic_metric);
-}
-
-/**
-The level set function is known to have diffusion issues therefore it needs to be reinitialized frequently. This operation can be quite expensive.
-
-*/
-
-void LS_reinit(scalar dist, double dt, double NB){
-  vector gr_LS[];
-  int i ;
-  double eps = 1.e-5;
-  scalar dist0[];
-
-  foreach(){
-    dist0[] = dist[] ;
-  }
-  for (i = 1; i<=100 ; i++){
-    double res=-100.;
-    foreach(reduction(max:res)){
-      double delt;
-      if(fabs(dist[])<NB/5.){
-        delt  = 0.;
-        foreach_dimension(){
-          if(dist[]>0){
-            gr_LS.x[]   = max(max(0., (dist[]    - dist[-1,0])/Delta),
-                              min(0., (dist[1,0] - dist[])    /Delta)) -1.;
-          }
-          else
-          {
-            gr_LS.x[]   = max(min(0., (dist[]    - dist[-1,0])/Delta),
-                              max(0., (dist[1,0] - dist[])    /Delta)) -1.; 
-          } 
-          delt += gr_LS.x[]*0.5*dt*dist0[]/sqrt(dist0[]*dist0[] + Delta*Delta);
-        }
-        dist[] -= delt;
-        
-        if(delt>=res) res = delt;
-      }
-    }
-    boundary({dist});
-    if(fabs(res)<eps){
-      // printf("%d %6.2e %6.2e %f \n",i,res,eps, dt);
-      break;
-    } 
-  }
-}
