@@ -33,7 +33,6 @@ for viscosity. */
 # include "viscosity.h"
 #endif
 
-
 /**
 The primary variables are the centered pressure field $p$ and the
 centered velocity field $\mathbf{u}$. The centered vector field
@@ -220,12 +219,8 @@ are defined at time $t-\Delta t/2$ i.e. are lagging the
 velocity/pressure fields by half a timestep. */
 
 event vof (i++,last);
-#if LevelSet
-event LS_advection(i++,last);
-#endif
 event tracer_advection (i++,last);
 event tracer_diffusion (i++,last);
-
 
 /**
 The fluid properties such as specific volume (fields $\alpha$ and
@@ -455,9 +450,6 @@ event adapt (i++,last) {
 }
 #endif
 
-#if LevelSet
-event LS_reinitialization(i++,last);
-#endif
 /**
 ## See also
 

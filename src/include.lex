@@ -36,17 +36,6 @@
     return NULL;
   }
 
-  static int is_page (const char * fname) {
-    char * page = malloc (strlen (fname) + strlen (".page") + 1);
-    strcpy (page, fname);
-    strcat (page, ".page");
-    FILE * fp = fopen (page, "r");
-    if (fp)
-      fclose (fp);
-    free (page);
-    return (fp != NULL);
-  }
-  
   static FILE * fdepend = NULL, * ftags = NULL, * myout = NULL;
   static char * fname;
   
@@ -123,12 +112,8 @@
 		     fname, yylineno, text);
 	  break;
 	}
-	if (is_page (t->file))
-	  fprintf (ftags, "call %s %s %s\n", 
-		   t->id, shortpath (t->file), t->id);
-	else
-	  fprintf (ftags, "call %s %s %d\n", 
-		   t->id, shortpath (t->file), t->line);
+	fprintf (ftags, "call %s %s %s\n", 
+		 t->id, shortpath (t->file), t->id);
       }
     }
   }
@@ -197,10 +182,7 @@ FDECL     {ID}+{SP}*\(
 "}" {
   scope--;
   if (scope < 0) {
-    if (!ftags)
-      return yyerror ("mismatched '}'");
-    else
-      fprintf (stderr, "%s:%d: warning: mismatched '}'\n", fname, yylineno);
+    fprintf (stderr, "%s:%d: warning: mismatched '}'\n", fname, yylineno);
     scope = 0;
   }
 }
@@ -292,18 +274,18 @@ FDECL     {ID}+{SP}*\(
       if (s)
 	check_tag (id);
     }
-    s = id;
+    s = strdup (id);
     if (!fstatic && !keywords_only && strcmp(s, "if")) {
       //      fprintf (stderr, "id: '%s'\n", s);
       Tag t = { s, fname, yylineno - nl, FUNCTION};
       int p = 0, para = 1, c;
-      while (para > p && (c = input()) != EOF) {
+      while (para > p && (c = input())) {
 	echo_c (c);
 	if (c == '(') para++;
 	else if (c == ')') para--;
       }
       if (c == ')') {
-	while ((c = input()) != EOF) {
+	while ((c = input())) {
 	  echo_c (c);
 	  if (c == '{' || c == ';')
 	    break;
@@ -324,6 +306,7 @@ FDECL     {ID}+{SP}*\(
 	}
       }
     }
+    free (s);
   }
 }
 
@@ -400,8 +383,8 @@ static int comment(void)
 	break;
     }
   }
-  fprintf (stderr, "%s:%d: error: unterminated comment\n", fname, lineno);
-  return 1;
+  fprintf (stderr, "%s:%d: warning: unterminated comment\n", fname, lineno);
+  return 0;
 }
 
 void stripname (char * path)
@@ -552,7 +535,7 @@ int includes (int argc, char ** argv, char ** out,
     else if (!strcmp (argv[i], "-debug"))
       debug = 1;
     else if (!strcmp (argv[i], "-o"))
-      output = argv[i + 1];
+      output = argv[++i];
     else if (argv[i][0] != '-' && \
 	     (tags || !strcmp (&argv[i][strlen(argv[i]) - 2], ".c"))) {
       if (file) {

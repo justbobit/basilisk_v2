@@ -17,7 +17,7 @@
 
   int dimension = 2, bghosts = 0;
   
-  int debug = 0, catch = 0, cadna = 0, nolineno = 0, events = 0;
+  int debug = 0, catch = 0, cadna = 0, nolineno = 0, events = 0, progress = 0;
   char dir[] = ".qccXXXXXX";
 
   char * autolink = NULL;
@@ -525,7 +525,7 @@
 
   void endtrace() {
     fprintf (yyout, " end_trace(\"%s\", \"%s\", %d); ",
-	     tracefunc, fname, nolineno ? 0 : line);
+	     tracefunc, nolineno ? "" : fname, nolineno ? 0 : line);
   }
 
   void endevent() {
@@ -1256,7 +1256,7 @@ TYPE                    [\*]*{WS}*{ID}({WS}*\[{WS}*{CONSTANT}?{WS}*\]|{WS}*\[)?
 	     "static int %s (const int i, const %s t, Event * _ev) { "
 	     "trace (\"%s\", \"%s\", %d); ",
 	     eventfunc[nevents], doubletype,
-	     eventfunc[nevents], fname, nolineno ? 0 : line);
+	     eventfunc[nevents], nolineno ? "" : fname, nolineno ? 0 : line);
     free (tracefunc);
     tracefunc = strdup (eventfunc[nevents]);
     intrace = 2; traceon = 0;
@@ -1301,7 +1301,7 @@ TYPE                    [\*]*{WS}*{ID}({WS}*\[{WS}*{CONSTANT}?{WS}*\]|{WS}*\[)?
   }
   if (intrace == 1 && scope == 0) {
     fprintf (yyout, " trace (\"%s\", \"%s\", %d);",
-	     tracefunc, fname, nolineno ? 0 : line - 1);
+	     tracefunc, nolineno ? "" : fname, nolineno ? 0 : line - 1);
     intrace = 2;
   }
   scope++;
@@ -2896,7 +2896,7 @@ void write_event (int i, FILE * fout)
     fprintf (fout, "%s_array,\n", func);
   else
     fprintf (fout, "((%s *)0),\n", doubletype);
-  fprintf (fout, "    \"%s\", %d, \"%s\"});\n", eventfile[i], 
+  fprintf (fout, "    \"%s\", %d, \"%s\"});\n", nolineno ? "" : eventfile[i], 
 	   nolineno ? 0 : eventline[i], eventid[i]);
 }
 
@@ -2990,6 +2990,8 @@ void compdir (FILE * fin, FILE * fout, FILE * swigfp,
 	   nvar + 1, nolineno ? "0" : "__LINE__", nvar, nvar);
   if (catch)
     fputs ("  catch_fpe();\n", fout);
+  if (progress)
+    fputs ("  last_events();\n", fout);
   fprintf (fout, "  %s_methods();\n", grid);
   for (i = varstack; i >= 0; i--) {
     var_t var = _varstack[i];
@@ -3109,6 +3111,8 @@ int main (int argc, char ** argv)
       source = 1;
     else if (!strcmp (argv[i], "-autolink"))
       autolinks = 1;
+    else if (!strcmp (argv[i], "-progress"))
+      progress = 1;
     else if (!strcmp (argv[i], "-Wall")) {
       char * s = strchr (command, ' ');
       if (s) {
@@ -3284,6 +3288,8 @@ int main (int argc, char ** argv)
       }
       if (swigfp)
 	fputs ("#include \"python.h\"\n", fout);
+      if (progress)
+	fputs ("#include \"grid/progress.h\"\n", fout);
       fclose (fout);
       fclose (fin);
       fout = dopen (file, "w");
