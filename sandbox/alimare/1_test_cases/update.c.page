@@ -149,7 +149,10 @@ event init (t = 0)
     dist[] = -geometry(x,y,1.);
   }
   boundary ({dist});
+  restriction({dist})
   fractions (dist, cs, fs);
+
+  boundary({cs,fs})
   restriction({cs,fs});
 
   /**
@@ -201,7 +204,8 @@ centered.h in the `LS_reinit`. Here the geometry is a notched disk (inspired by
 Zalesak's test case) with growing radius. There is no proper treatment for the
 growth of the radius (no physical conditions) and the velocity field is poorly
 updated (set to $0$ in the newly covered cells).*/
-event LS_advection(i+=2,last){
+event LS_advection(i++,last){
+  if(i%2 == 1){
 //     vertex scalar phi[];
 //     foreach_vertex() {
 //       phi[] = -geometry(x,y,0.13+0.025*t);
@@ -246,24 +250,34 @@ event LS_advection(i+=2,last){
   TS.rho           = rho_S;
   
   double L_H       = latent_heat;
-
+  face vector fs2[];
+  scalar cs2[];
   foreach_face(){
     v_pc.x[] = 0.;
+    fs2.x[]  = 1.-fs.x[];
   }
+  foreach()
+    cs2[] = 1.-cs[];
 
-  phase_change_velocity_LS_embed (cs, fs ,TL, TS, v_pc, dist, L_H);
+  /**
+  cs and fs have just been inverted, we create temporary fields just for
+  calculation purposes
+  */
+
+
+
+  phase_change_velocity_LS_embed (cs2, fs2 ,TL, TS, v_pc, dist, L_H);
 
   foreach_face(){
-    v_pc.x[] += cs[]*u.x[] + (1.-cs[])*u2.x[];
+    v_pc.x[] += fs2[]*u.x[] + (1.-fs2[])*u2.x[];
   }
   
   boundary((scalar*){v_pc});
+  restriction((scalar*){v_pc});
 
   advection (level_set, v_pc, dt);
   boundary ({dist});
   restriction({dist});
-
-
 
   fractions (dist, cs, fs);
   boundary({cs,fs});
@@ -288,11 +302,11 @@ boundary({cs});
 
   event ("properties");
   fprintf(stderr, "TOTO\n" );
-
+  }
 }
 
-event LS_reinitialization(i+=2,last){
-  if(i>0){
+event LS_reinitialization(i++,last){
+  if(i%2 == 1){
     LS_reinit2(dist,L0/(1 << MAXLEVEL), NB_width,
       1.4*(nb_cell_NB));
   }

@@ -34,11 +34,11 @@ Surface tension is also modeled.
 #define LevelSet 1
 
 #include "navier-stokes/centered.h"
-#include "alimare/elementary_body.h"
+#include "../elementary_body.h"
 #include "tension.h"
 
 #if LevelSet
-# include "alimare/level_set.h"
+# include "../level_set.h"
 #endif
 /**
 Level set function is used

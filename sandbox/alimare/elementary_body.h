@@ -67,7 +67,8 @@ The inputs of the function are:
 * $\mathbf{v}_{pc}$: the phase change velocity. */
 
 void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
- scalar tr2, face vector v_pc, scalar dist, double latent_heat) {
+ scalar tr2, face vector v_pc, scalar dist, double latent_heat, 
+ double NB_width) {
   
  /**
   The phase change velocity $\mathbf{v}_{pc}$ is
@@ -81,9 +82,10 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   
   face vector gtr[], gtr2[];
   foreach_face()
+    if(fabs(dist[])<NB_width)
     gtr.x[] = face_gradient_x(tr,0);
   boundary((scalar*){gtr});
-
+  restriction((scalar *){gtr});
   foreach(){
       cs[]      = 1.-cs[];
   }
@@ -94,8 +96,10 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   restriction({cs,fs});
   
   foreach_face()
+    if(fabs(dist[])<NB_width)
     gtr2.x[] = face_gradient_x(tr2,0);
   boundary((scalar*){gtr2});
+  restriction((scalar *){gtr2});
   
   foreach(){
       cs[]      = 1.-cs[];
@@ -106,8 +110,8 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   restriction({cs,fs});
 
   /**
-  With the concentration gradient and the normal vector we can now compute the
-  evaporation velocity $\mathbf{v}_{pc}$, following the lines drawn in
+  With the the normal vector and the gradients of the tracers we can now compute
+  the phase change velocity $\mathbf{v}_{pc}$, following the lines drawn in
   [meanflow.c](/sandbox/popinet/meanflow.c). We define it as the product between
   the density ratio and the diffusive flow. Note that $\mathbf{v}_{pc}$ is weighted
   by the face metric. */
@@ -117,20 +121,14 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
     v_pc.x[] = 0.;
     if (cs[] > 0. && cs[] < 1.){
 
-      /**
-      To find the vapor neighbor cells and weight the averaging between them, we
-      compute the normal (normalized w.r.t. the norm-2) to the interface. We
-      have to compute it before the main loop, and not locally, to apply *boundary()*
-      to it and get consistent values in the ghost cells. */
-
       coord n = facet_normal (point, cs, fs);
       normalize(&n);
-      /**
-      We compute the evaporation velocity. */
-      v_pc.x[] = (gtr.x[]*n.x + gtr2.x[]*n.x)*fm.x[]*1e-4;
+
+      v_pc.x[] = (gtr.x[]*n.x*fs.x[] + gtr2.x[]*n.x*(1.-fs.x[]))*1e-1;
     }
   }
   boundary((scalar *){v_pc});
+  restriction((scalar *){v_pc});
 }
 
 
