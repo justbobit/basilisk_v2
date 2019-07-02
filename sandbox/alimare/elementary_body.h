@@ -85,7 +85,6 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
     if(fabs(dist[])<NB_width)
     gtr.x[] = face_gradient_x(tr,0);
   boundary((scalar*){gtr});
-  restriction((scalar *){gtr});
   foreach(){
       cs[]      = 1.-cs[];
   }
@@ -99,7 +98,6 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
     if(fabs(dist[])<NB_width)
     gtr2.x[] = face_gradient_x(tr2,0);
   boundary((scalar*){gtr2});
-  restriction((scalar *){gtr2});
   
   foreach(){
       cs[]      = 1.-cs[];
@@ -119,7 +117,8 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   foreach_face() {
 
     v_pc.x[] = 0.;
-    if (cs[] > 0. && cs[] < 1.){
+
+    if (fabs(dist[])<NB_width){
 
       coord n = facet_normal (point, cs, fs);
       normalize(&n);

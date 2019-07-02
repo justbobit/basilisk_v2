@@ -2,7 +2,7 @@ CFLAGS +=  -O2
 
 include $(BASILISK)/Makefile.defs
 
-moving_embed.tst  : CFLAGS += -events
+moving_embed.tst  : CFLAGS += -events  -catch
 
 test_advection.tst: CFLAGS += -fopenmp
 

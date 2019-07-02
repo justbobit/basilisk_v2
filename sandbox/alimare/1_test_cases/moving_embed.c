@@ -38,6 +38,7 @@ both fields.
 #define MAXLEVEL 8
 
 #define H0 -L0/4.
+#define DT_MAX  L0/(1 << MAXLEVEL)*0.8
 
 #define T_eq         0.
 #define D_L          0.12
@@ -61,20 +62,11 @@ scalar * level_set = {dist};
 face vector v_pc[];
 
 face vector muv[];
+// face vector muv2[];
 mgstats mgT;
 
 int     nb_cell_NB =  1 << 3 ;  // number of cells for the NB
 double  NB_width ;              // length of the NB
-
-TL.D             = D_L;
-TL.peclet        = peclet_L;
-TL.therm_conduct = lambda_L;
-TL.rho           = rho_L;
-
-TS.D             = D_S;
-TS.peclet        = peclet_S;
-TS.therm_conduct = lambda_S;
-TS.rho           = rho_S;
   
 
 /**
@@ -99,31 +91,19 @@ event properties (i++)
 {
   foreach_face()
     muv.x[] = fm.x[]*0.125/160.;
+
+  // foreach_face()
+  //   muv2.x[] = (1.-fm.x[])*100.;
 }
 
-/**
-The fluid is injected on the left boundary with a unit velocity. The
-tracer is injected in the lower-half of the left boundary. An outflow
-condition is used on the right boundary. */
 
-u.n[left]  = dirichlet(1.);
-p[left]    = neumann(0.);
-pf[left]   = neumann(0.);
-
-u.n[right] = neumann(0.);
-p[right]   = dirichlet(0.);
-pf[right]  = dirichlet(0.);
-
-/**
-The top and bottom walls are free-slip and the cylinder is no-slip. */
 
 /** on the embed boundary : .n velocity is the velocity of the LS .t is 0.
 */
 
-// u.n[embed] = fabs(y) > 1.5 ? neumann(0.) : 
-//     dirichlet_embed_LS(point , cs , fs, v_pc);
-u.n[embed] = fabs(y) == L0/2. ? neumann(0.) :\
-  dirichlet_embed_LS(point , cs , fs, v_pc);
+// u.n[embed] = fabs(y) == L0/2. ? neumann(0.) :\
+  // dirichlet_embed_LS(point , cs , fs, v_pc);
+u.n[embed] = fabs(y) == L0/2. ? neumann(0.) : dirichlet(0.);
 u.t[embed] = fabs(y) == L0/2. ? neumann(0.) : dirichlet(0.);
 
 TL[embed]  = dirichlet(T_eq);
@@ -168,115 +148,63 @@ event init (t = 0)
   }
 
   boundary({TL, TS});
-  // view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
-    // ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
-  // draw_vof("cs");
-  // squares("cs", min=0, max = 1);
-  // save ("cs.png");
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  squares("TL", min=0, max = 1);
+  save ("TL.png");
 }
+
+
+
+
+
+event stability(i++){
+  if(i%2 == 0){
+    /**
+    In the evaporation examples
+    ([static_drop.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_drop.c) and
+    [static_film.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_film.c)),
+    the evaporation velocity was due to the diffusive flux of the vapor in the
+    gaz phase. Here, the solification is an equilibrium between the heat
+    transfers of each side of the interface. */
+
+
+    double L_H       = latent_heat;
+
+    /**
+    cs and fs have just been inverted, we create temporary fields just for
+    calculation purposes
+
+    When this calculation is done (1-cs) => TL, cs => TS (same for fs,(1-fs) )
+    */
+    phase_change_velocity_LS_embed (cs, fs ,TL, TS, v_pc, dist, L_H, NB_width);
+    stats s = statsf (v_pc.y);
+    fprintf (stderr, "# %.12f %.9f %g\n", s.sum, s.min, s.max);
+
+    foreach_face(){
+      uf.x[] += fs.x[]*v_pc.x[];
+      uf2.x[] += (1.-fs.x[])*v_pc.x[];
+    }
+    double dtmax2 = DT_MAX;
+    timestep (uf, dtmax2);
+  } 
+}
+
 
 /**
-We check the number of iterations of the Poisson and viscous
-problems. */
-
-event logfile (i++;t<=5.0){
-
-  norm n  = normf (v_pc.x);
-
-  fprintf (stderr, "%d %g %g %d %d %g %g\n", i, t, dt, mgp.i, mgu.i, n.max, n.avg);
-
-}
-
-event tracer_diffusion(i++){
-  if(i%2 ==0){
-    mgT =diffusion(TL, dt, D = TL.D);
-    boundary({TL});
-  }
-  else{
-    mgT = diffusion(TS, dt, D = TS.D);
-    boundary({TS});
-  }
-  
-  fprintf(ferr,"%t=%g\ti=%d\tDT=%g\n",t,i,dt);
-}/**
 Advection of the Level_set function. Based on the calculation of the velocity of
 the phase_change 'v_pc' and of the gradients of both the tracers on the
 interface using 'face_gradient_x'.
 */
-event LS_advection(i++,last){
-  if(i%2 == 1){
-//     vertex scalar phi[];
-//     foreach_vertex() {
-//       phi[] = -geometry(x,y,0.13+0.025*t);
-//     }
-//     boundary ({phi});
-//     fractions (phi, cs, fs);
-//     /**
-//     We set the velocity field in the covered cells. */
-    
-//     foreach()
-//       u.x[] = cs[] ? cs[] : 0.; 
-//     boundary ((scalar *){u});
-//     trash ({uf});
-//     foreach_face()
-//       uf.x[] = fm.x[]*face_value (u.x, 0);
-//     boundary ((scalar *){uf});
+event tracer_advection(i++,last){
+  if(i%2 == 0){
 
-//     /**
-//     We update fluid properties. */
-
-//     event ("properties");
-
-//     dtmax = DT;
-//     event ("stability");
-
-  /**
-  In the evaporation examples
-  ([static_drop.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_drop.c) and
-  [static_film.c](/sandbox/qmagdelaine/phase_change/1_elementary_body/static_film.c)),
-  the evaporation velocity was due to the diffusive flux of the vapor in the
-  gaz phase. Here, the solification is an equilibrium between the heat
-  transfers of each side of the interface. */
-
-
-  double L_H       = latent_heat;
-  boundary({TL});
-  restriction({TL});
-  foreach_face(){
-    v_pc.x[] = 0.;                        
-    fs.x[]   = 1.-fs.x[];
-  }
-  foreach()
-    cs[] = 1.-cs[];
-
-  
-  boundary({cs,fs});
-  restriction({cs,fs});
-
-  boundary({TS});
-  restriction({TS});
-  
-  /**
-  cs and fs have just been inverted, we create temporary fields just for
-  calculation purposes
-
-  When this calculation is done (1-cs) => TL, cs => TS (same for fs,(1-fs) )
-  */
-  phase_change_velocity_LS_embed (cs, fs ,TL, TS, v_pc, dist, L_H, NB_width);
-  
-  foreach_face(){
-    fs.x[]  = 1.-fs.x[];
-  }
-  foreach()
-    cs[] = 1.-cs[];
-
-  boundary({cs,fs});
-  restriction({cs,fs});
-
-  // foreach_face()
-  //   if(fabs(dist[])<NB_width)
-  //     v_pc.x[] += fs.x[]*uf.x[] + (1.-fs.x[])*uf2.x[];
-
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  squares("uf.y");
+  save("cs0.png");
 
   advection (level_set, v_pc, dt);
   boundary ({dist});
@@ -285,6 +213,11 @@ event LS_advection(i++,last){
   fractions (dist, cs, fs);
   boundary({cs,fs});
   restriction({cs,fs});
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  squares("uf.y");
+  save("cs.png");
 
   boundary ((scalar *){u});
   restriction ((scalar *){u});
@@ -300,6 +233,41 @@ event LS_advection(i++,last){
   event ("properties");
   }
 }
+event tracer_diffusion(i++){
+  TL.D             = D_L;
+  TL.peclet        = peclet_L;
+  TL.therm_conduct = lambda_L;
+  TL.rho           = rho_L;
+
+  TS.D             = D_S;
+  TS.peclet        = peclet_S;
+  TS.therm_conduct = lambda_S;
+  TS.rho           = rho_S;
+
+  // if(i%2 ==0){
+  //   fprintf(stderr, "1111\n" );
+  //   mgT = diffusion(TL, dt, D = TL.D);
+  //   boundary({TL});
+  //   restriction({TL});
+  // }
+  // else{
+  //   fprintf(stderr, "2222\n" );
+  //   mgT = diffusion(TS, dt, D = TS.D);
+  //   boundary({TS});
+  //   restriction({TS});
+  // }
+}
+
+// event double_calculation(i++,last){
+//   face vector muv_temp[];
+//   foreach_face(){
+//     muv_temp.x[] = muv.x[];
+//     muv.x[]      = muv2.x[];
+//     muv2.x[]     = muv_temp.x[];
+//   }
+//   boundary((scalar *) {muv});
+//   restriction((scalar *) {muv});
+// }
 
 event LS_reinitialization(i++,last){
   if(i%2 == 1){
@@ -327,8 +295,18 @@ event movies ( i +=10,last)
   view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
     ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
   draw_vof("cs");
-  squares("m.y", min=-10, max = 10);
+  squares("uf.y", min=-1, max = 1);
   save ("movie.mp4");
+}
+
+/**
+We check the number of iterations of the Poisson and viscous
+problems. */
+
+event logfile (i++;i<=20){
+
+  fprintf (stderr, "%d %g %g %d %d %g %g\n", i, t, dt, mgp.i, mgu.i);
+
 }
 
 /**
