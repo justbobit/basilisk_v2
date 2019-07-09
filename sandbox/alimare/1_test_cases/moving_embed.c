@@ -31,7 +31,7 @@ both fields.
 #include "tracer.h"
 #include "view.h"
 
-#define MIN_LEVEL 3
+#define MIN_LEVEL 7
 #define MAXLEVEL 7
 #define latent_heat 10.
 #define T_eq         0.
@@ -39,8 +39,8 @@ both fields.
 #define TS_inf       -1.
 
 
-#define H0 -0.99*L0/4.
-#define DT_MAX  L0/(1 << MAXLEVEL)*0.8
+#define H0 0.001*L0
+#define DT_MAX  1.
 
 #define T_eq         0.
 #define plane(x, y, H) (y - H)
@@ -79,9 +79,14 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   definition of the gradients with embedded boundaries. */
   
   face vector gtr[], gtr2[];
-  foreach_face()
+  foreach_face(){
     if(fabs(dist[])<NB_width)
-    gtr.x[] = face_gradient_x(tr,0);
+      gtr.x[] = face_gradient_x(tr,0);
+    else
+      gtr.x[] = 0.;
+  }
+
+
   boundary((scalar*){gtr});
   foreach(){
       cs[]      = 1.-cs[];
@@ -92,9 +97,12 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   boundary({cs,fs});
   restriction({cs,fs});
   
-  foreach_face()
+  foreach_face(){
     if(fabs(dist[])<NB_width)
-    gtr2.x[] = face_gradient_x(tr2,0);
+      gtr2.x[] = face_gradient_x(tr2,0);
+    else
+      gtr2.x[] = 0.;
+  }
   boundary((scalar*){gtr2});
   
   foreach(){
@@ -115,15 +123,27 @@ void phase_change_velocity_LS_embed (scalar cs, face vector fs, scalar tr,
   foreach_face() {
 
     v_pc.x[] = 0.;
+  }
 
-    if (fabs(dist[])<NB_width){
+
+
+  foreach_face(){
+    if (fabs(dist[])<=0.5*Delta){
 
       coord n = facet_normal (point, cs, fs);
       normalize(&n);
 
-      v_pc.x[] = (gtr.x[]*n.x*fs.x[] + gtr2.x[]*n.x*(1.-fs.x[]))*1e-1;
+      v_pc.x[] = (1.4*gtr.x[]*n.x*fs.x[] 
+                  + gtr2.x[]*n.x*(1.-fs.x[]))*0.1;
+    }
+    else{
+      if(fabs(dist[])<0.9*NB_width){
+         v_pc.x[] = (1.4*gtr.x[]*fs.x[] + gtr2.x[]*(1.-fs.x[]))
+                  * 0.5*Delta/pow(dist[],2.); 
+      }
     }
   }
+
   boundary((scalar *){v_pc});
   restriction((scalar *){v_pc});
 }
@@ -146,7 +166,8 @@ void advection_LS (struct Advection p) //never takes into account the solid
   scalar f, src;
   for (f,src in p.tracers,lsrc) {
     face vector flux[];
-    tracer_fluxes (f, p.u, flux, p.dt, src);
+    // tracer_fluxes (f, p.u, flux, p.dt, src);
+    tracer_fluxes_LS (f, p.u, flux, p.dt, src);
     foreach()
       foreach_dimension()
         f[] += p.dt*(flux.x[] - flux.x[1])/(Delta); // careful we have removed
@@ -157,6 +178,55 @@ void advection_LS (struct Advection p) //never takes into account the solid
   if (!p.src)
     free (lsrc);
 }
+
+void tracer_fluxes_LS (scalar f,
+        face vector uf,
+        face vector flux,
+        double dt,
+        (const) scalar src)
+{
+
+  /**
+  We first compute the cell-centered gradient of *f* in a locally-allocated
+  vector field. */
+  
+  vector g[];
+  gradients ({f}, {g});
+
+  /**
+  For each face, the flux is composed of two parts... */
+
+  foreach_face() {
+
+    /**
+    A normal component... (Note that we cheat a bit here, `un` should
+    strictly be `dt*(uf.x[i] + uf.x[i+1])/((fm.x[] +
+    fm.x[i+1])*Delta)` but this causes trouble with boundary
+    conditions (when using narrow '1 ghost cell' stencils)). */
+
+    double un = dt*uf.x[]/(Delta + SEPS), s = sign(un);
+    int i = -(s + 1.)/2.;
+    double f2 = f[i] + (src[] + src[-1])*dt/4. + s*(1. - s*un)*g.x[i]*Delta/2.;
+
+    /**
+    and tangential components... */
+
+  
+    double vn = (uf.y[i] + uf.y[i,1])/2.;
+    double fyy = vn < 0. ? f[i,1] - f[i] : f[i] - f[i,-1];
+    f2 -= dt*vn*fyy/(2.*Delta);
+   
+
+    flux.x[] = f2*uf.x[];
+  }
+
+  /**
+  Boundary conditions ensure the consistency of fluxes across
+  variable-resolution boundaries (on adaptive meshes). */
+
+  boundary_flux ({flux});
+}
+
 
 
 /**
@@ -190,14 +260,8 @@ event init (t = 0)
   /**
   The domain is the intersection of a channel of width unity and a
   circle of diameter 0.125. */
-
-#if TREE
-    refine (level < MAXLEVEL && plane(x, y, (H0 - NB_width)) > 0.
-            && plane(x, y, (H0 + NB_width)) < 0.);
-#endif
-
   foreach_vertex(){
-    dist[] = plane(x,y,H0);
+    dist[] = clamp(plane(x,y,H0),-NB_width,NB_width);
   }
   boundary ({dist});
   restriction({dist});
@@ -206,12 +270,13 @@ event init (t = 0)
   restriction({cs,fs});
   
   foreach() {
-    TL[] = cs[]*TL_inf;
-    TS[] = (1. - cs[])*TS_inf;
+    TL[] = TL_inf;
+    TS[] = TS_inf;
   }
 
   boundary({TL,TS});
   restriction({TL,TS});
+
 }
 
 event stability(i++){
@@ -221,42 +286,59 @@ event stability(i++){
 
 
 event tracer_advection(i++,last){
-  if(i%2 == 1){
+  if(i%2 == 0){
   double L_H       = latent_heat;
-  foreach_face(){
-    v_pc.x[] = 0.;                        
-    fs.x[]   = 1.-fs.x[];
-  }
-  foreach()
-    cs[] = 1.-cs[];
-
-  
-  boundary({cs,fs});
-  restriction({cs,fs});
-  /**
-  cs and fs have just been inverted, we create temporary fields just for
-  calculation purposes
-
-  When this calculation is done (1-cs) => TL, cs => TS (same for fs,(1-fs) )*/
-  
+  if(t>0.5){  
   phase_change_velocity_LS_embed (cs, fs ,TL, TS, v_pc, dist, L_H, NB_width);
-  
-  foreach_face(){
-    fs.x[]  = 1.-fs.x[];
   }
-  foreach()
-    cs[] = 1.-cs[];
-
-  boundary({cs,fs});
-  restriction({cs,fs});
+  else{
+    foreach_face()
+      v_pc.x[] = 0.;
+  }
 
   advection_LS (level_set, v_pc, dt);
   boundary ({dist});
   restriction({dist});
 
-  // fractions (dist, cs, fs);
-  // boundary({cs,fs});
-  // restriction({cs,fs});
+  scalar cs0[];
+  foreach()
+    cs0[] = cs[];
+  boundary({cs0});
+  restriction({cs0});
+
+
+  fractions (dist, cs, fs);
+  boundary({cs,fs});
+  restriction({cs,fs});
+
+  int sum = 0;
+  foreach(reduction(+:sum)) {
+    
+    if(cs0[] == 0.){
+      cs0[] -= cs[];
+      if(fabs(cs0[])> SEPS){ 
+        TL[] = T_eq; // 0-order approx. better to use gradients if possible
+                     // will be fixed
+        sum++;
+      }
+    }
+    else if(cs0[] == 1.){
+      cs0[] -= cs[];
+      if(fabs(cs0[])> SEPS){ 
+        TS[] = T_eq;
+        sum++;
+      }
+    }
+    else if(cs[] == 0)  TL[] = T_eq;  
+    else if(cs[] == 1.) TS[] = T_eq;
+  }
+  
+  boundary({TL,TS});
+  restriction({TL,TS});
+  if(sum>0){
+    stats s = statsf (v_pc.y);
+    fprintf (stderr, "##%d %.12f %.9f %g\n",sum, s.sum, s.min, s.max);
+  }
 
   event ("properties");
   }
@@ -276,33 +358,62 @@ event tracer_diffusion(i++){
   }
 }
 
+
+event LS_reinitialization(i+=2,last){
+  if(i>0){
+    LS_reinit2(dist,L0/(1 << MAXLEVEL), 0.9*NB_width,
+      20.*nb_cell_NB);
+  }
+}
+
+
 /**
 We produce an animation of the tracer field. */
 
-event movies ( i +=2,last)
+event movies ( i +=24,last)
 {
   boundary({TL,TS});
+  scalar visu[];
+  foreach(){
+    visu[] = (1.-cs[])*TL[]+cs[]*TS[] ;
+    // visu[] = TL[] ;
+  }
+  boundary({visu});
   view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
     ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
-  // draw_vof("cs");
-  squares("TL", min =0, max = 1);
-  save ("TL.gif");
-  // squares("u.y");
-  // save ("u.gif");
-  // squares("u2.y");
-  // save ("u2.gif");
-  squares("dist", min = -0.5*NB_width , max = 0.5*NB_width);
-  save ("dist.gif");
+  draw_vof("cs");
+  squares("visu", min =-1, max = 1);
+  save ("visu.mp4");
+  clear();
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
   squares("v_pc.y");
-  save ("v_pcy.gif");
+  save ("v_pc.mp4");
+  clear();
+  view (fov = 16.642, quat = {0,0,0,1}, tx = -0.0665815, 
+    ty = -0.00665815, bg = {1,1,1}, width = 600, height = 600, samples = 1);
+  draw_vof("cs");
+  cells();
+  squares("TS", min = -1 , max = 1);
+  save ("TS.mp4");
 }
 
 /**
 We check the number of iterations of the Poisson and viscous
 problems. */
 
-event logfile (i++;i<=40){
-
-  fprintf (stderr, "%d %g %g %d %d\n", i, t, dt, mgp.i, mgu.i);
+event logfile (i++;t<0.8){
+  stats s;
+  if(i%2==0){
+    s = statsf (TS);
+    fprintf (stderr, "# %g TS %.12f %.9f\n", t, s.min, s.max);
+  }
+  if(i%2==1){
+    s = statsf (TL);
+    fprintf (stderr, "# %g TL %.12f %.9f\n", t, s.min, s.max);
+  }
+  stats s2 = statsf(v_pc.y);
+  fprintf (stderr, "##  v_pc.y  %.12f %.12f\n", s2.min, s2.max);
 }
 
